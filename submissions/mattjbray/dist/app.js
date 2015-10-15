@@ -4084,6 +4084,651 @@ Elm.Http.make = function (_elm) {
                       ,RawNetworkError: RawNetworkError};
    return _elm.Http.values;
 };
+Elm.JediList = Elm.JediList || {};
+Elm.JediList.make = function (_elm) {
+   "use strict";
+   _elm.JediList = _elm.JediList || {};
+   if (_elm.JediList.values)
+   return _elm.JediList.values;
+   var _op = {},
+   _N = Elm.Native,
+   _U = _N.Utils.make(_elm),
+   _L = _N.List.make(_elm),
+   $moduleName = "JediList",
+   $Array = Elm.Array.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Effects = Elm.Effects.make(_elm),
+   $Html = Elm.Html.make(_elm),
+   $Html$Attributes = Elm.Html.Attributes.make(_elm),
+   $Html$Events = Elm.Html.Events.make(_elm),
+   $Http = Elm.Http.make(_elm),
+   $Json$Decode = Elm.Json.Decode.make(_elm),
+   $Lib = Elm.Lib.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $Task = Elm.Task.make(_elm),
+   $World = Elm.World.make(_elm);
+   var onWorld = F2(function (mJedi,
+   mWorld) {
+      return function () {
+         var _v0 = A3($Lib.mMap2,
+         F2(function (v0,v1) {
+            return {ctor: "_Tuple2"
+                   ,_0: v0
+                   ,_1: v1};
+         }),
+         mWorld,
+         mJedi);
+         switch (_v0.ctor)
+         {case "Just":
+            switch (_v0._0.ctor)
+              {case "_Tuple2":
+                 return _U.eq(_v0._0._1.homeworld.id,
+                   _v0._0._0.id);}
+              break;
+            case "Nothing": return false;}
+         _U.badCase($moduleName,
+         "between lines 411 and 414");
+      }();
+   });
+   var viewJedi = F2(function (mWorld,
+   mJedi) {
+      return A2($Html.li,
+      _L.fromArray([$Html$Attributes.$class("css-slot")
+                   ,$Html$Attributes.style(A2(onWorld,
+                   mJedi,
+                   mWorld) ? _L.fromArray([{ctor: "_Tuple2"
+                                           ,_0: "color"
+                                           ,_1: "red"}]) : _L.fromArray([]))]),
+      function () {
+         switch (mJedi.ctor)
+         {case "Just":
+            return _L.fromArray([A2($Html.h3,
+                                _L.fromArray([]),
+                                _L.fromArray([$Html.text(mJedi._0.name)]))
+                                ,A2($Html.h6,
+                                _L.fromArray([]),
+                                _L.fromArray([$Html.text(mJedi._0.homeworld.name)]))]);
+            case "Nothing":
+            return _L.fromArray([]);}
+         _U.badCase($moduleName,
+         "between lines 440 and 446");
+      }());
+   });
+   var canScroll = F3(function (upOrDown,
+   scrollSpeed,
+   jediSlots) {
+      return function () {
+         var $ = function () {
+            switch (upOrDown.ctor)
+            {case "Down":
+               return {ctor: "_Tuple4"
+                      ,_0: $Lib.aLast
+                      ,_1: function (_) {
+                         return _.apprentice;
+                      }
+                      ,_2: scrollSpeed
+                      ,_3: $Array.length(jediSlots)};
+               case "Up":
+               return {ctor: "_Tuple4"
+                      ,_0: $Lib.aFirst
+                      ,_1: function (_) {
+                         return _.master;
+                      }
+                      ,_2: 0
+                      ,_3: 0 - scrollSpeed};}
+            _U.badCase($moduleName,
+            "between lines 384 and 396");
+         }(),
+         getFirstOrLast = $._0,
+         apprenticeOrMaster = $._1,
+         scrollStart = $._2,
+         scrollEnd = $._3;
+         var jediInView = $Lib.any($Lib.notNothing)(A2($Array.slice,
+         scrollStart,
+         scrollEnd)(jediSlots));
+         var loadedJedis = A2($Array.filter,
+         $Lib.notNothing,
+         jediSlots);
+         var next = A2($Lib.andThenAndThen,
+         getFirstOrLast(loadedJedis),
+         apprenticeOrMaster);
+         return $Lib.notNothing(next) && jediInView;
+      }();
+   });
+   var haveJediAt = F2(function (pos,
+   _v7) {
+      return function () {
+         return !_U.eq(A2($Array.get,
+         pos,
+         _v7.jediSlots),
+         $Maybe.Just($Maybe.Nothing));
+      }();
+   });
+   var needJediAt = F2(function (pos,
+   model) {
+      return A2($Lib.inBounds,
+      pos,
+      model.jediSlots) && $Basics.not(A2(haveJediAt,
+      pos,
+      model));
+   });
+   var removeRequest = F2(function (request,
+   requests) {
+      return A2($List.filter,
+      function (r) {
+         return !_U.eq(r,request);
+      },
+      requests);
+   });
+   var adjustPos = F3(function (pos,
+   oldScrollPos,
+   newScrollPos) {
+      return function () {
+         var offset = oldScrollPos - newScrollPos;
+         return pos + offset;
+      }();
+   });
+   var abortAndSaveAllRequests = function (model) {
+      return {ctor: "_Tuple2"
+             ,_0: _U.replace([["jediRequests"
+                              ,_L.fromArray([])]
+                             ,["requestsToResume"
+                              ,A2($List.append,
+                              model.requestsToResume,
+                              model.jediRequests)]],
+             model)
+             ,_1: $Effects.batch(A2($List.map,
+             function (_) {
+                return _.abort;
+             },
+             model.jediRequests))};
+   };
+   var abortRequests = function (model) {
+      return function () {
+         var $ = A2($List.partition,
+         function (request) {
+            return A2($Lib.inBounds,
+            A3(adjustPos,
+            request.insertPos,
+            request.scrollPos,
+            model.scrollPos),
+            model.jediSlots);
+         },
+         model.jediRequests),
+         newRequests = $._0,
+         requestsToAbort = $._1;
+         var aborts = A2($List.map,
+         function (_) {
+            return _.abort;
+         },
+         requestsToAbort);
+         return {ctor: "_Tuple2"
+                ,_0: _U.replace([["jediRequests"
+                                 ,newRequests]],
+                model)
+                ,_1: $Effects.batch(aborts)};
+      }();
+   };
+   var NoAction = {ctor: "NoAction"};
+   var Scroll = F2(function (a,b) {
+      return {ctor: "Scroll"
+             ,_0: a
+             ,_1: b};
+   });
+   var viewScrollButton = F5(function (address,
+   scrollDisabled,
+   jediSlots,
+   scrollSpeed,
+   dir) {
+      return function () {
+         var clickHandler = A2($Html$Events.onClick,
+         address,
+         A2(Scroll,dir,scrollSpeed));
+         var enabled = $Basics.not(scrollDisabled) && A3(canScroll,
+         dir,
+         scrollSpeed,
+         jediSlots);
+         var className = function () {
+            switch (dir.ctor)
+            {case "Down":
+               return "css-button-down";
+               case "Up":
+               return "css-button-up";}
+            _U.badCase($moduleName,
+            "between lines 462 and 468");
+         }();
+         var classes = $Html$Attributes.classList(_L.fromArray([{ctor: "_Tuple2"
+                                                                ,_0: className
+                                                                ,_1: true}
+                                                               ,{ctor: "_Tuple2"
+                                                                ,_0: "css-button-disabled"
+                                                                ,_1: $Basics.not(enabled)}]));
+         return A2($Html.button,
+         enabled ? _L.fromArray([classes
+                                ,clickHandler]) : _L.fromArray([classes]),
+         _L.fromArray([]));
+      }();
+   });
+   var SetJedi = F2(function (a,
+   b) {
+      return {ctor: "SetJedi"
+             ,_0: a
+             ,_1: b};
+   });
+   var SetWorld = function (a) {
+      return {ctor: "SetWorld"
+             ,_0: a};
+   };
+   var initModel = F2(function (nbSlots,
+   scrollSpeed) {
+      return {_: {}
+             ,jediRequests: _L.fromArray([])
+             ,jediSlots: A2($Array.repeat,
+             nbSlots,
+             $Maybe.Nothing)
+             ,nextRequestId: 0
+             ,requestsToResume: _L.fromArray([])
+             ,scrollPos: 0
+             ,scrollSpeed: scrollSpeed
+             ,world: $Maybe.Nothing};
+   });
+   var mkJediUrl = function (id) {
+      return {_: {}
+             ,id: id
+             ,url: A2($Basics._op["++"],
+             "http://localhost:3000/dark-jedis/",
+             $Basics.toString(id))};
+   };
+   var Down = {ctor: "Down"};
+   var Up = {ctor: "Up"};
+   var viewScrollButtons = F2(function (address,
+   model) {
+      return function () {
+         var scrollDisabled = A2($Lib.any,
+         A2($Basics.flip,
+         onWorld,
+         model.world),
+         model.jediSlots);
+         return A2($Html.div,
+         _L.fromArray([$Html$Attributes.$class("css-scroll-buttons")]),
+         A2($List.map,
+         A4(viewScrollButton,
+         address,
+         scrollDisabled,
+         model.jediSlots,
+         model.scrollSpeed),
+         _L.fromArray([Up,Down])));
+      }();
+   });
+   var view = F2(function (address,
+   model) {
+      return A2($Html.div,
+      _L.fromArray([$Html$Attributes.$class("css-scrollable-list")]),
+      _L.fromArray([A2($Html.ul,
+                   _L.fromArray([$Html$Attributes.$class("css-slots")]),
+                   A2($List.map,
+                   viewJedi(model.world),
+                   $Array.toList(model.jediSlots)))
+                   ,A2(viewScrollButtons,
+                   address,
+                   model)]));
+   });
+   var JediRequest = F5(function (a,
+   b,
+   c,
+   d,
+   e) {
+      return {_: {}
+             ,abort: e
+             ,id: a
+             ,insertPos: c
+             ,jediUrl: b
+             ,scrollPos: d};
+   });
+   var JediUrl = F2(function (a,
+   b) {
+      return {_: {},id: a,url: b};
+   });
+   var decodeJediUrl = A2($Json$Decode.andThen,
+   A2($Json$Decode._op[":="],
+   "id",
+   $Json$Decode.oneOf(_L.fromArray([A2($Json$Decode.map,
+                                   $Maybe.Just,
+                                   $Json$Decode.$int)
+                                   ,$Json$Decode.$null($Maybe.Nothing)]))),
+   function (mId) {
+      return function () {
+         switch (mId.ctor)
+         {case "Just":
+            return A2($Json$Decode.object1,
+              function (url) {
+                 return $Maybe.Just(A2(JediUrl,
+                 mId._0,
+                 url));
+              },
+              A2($Json$Decode._op[":="],
+              "url",
+              $Json$Decode.string));
+            case "Nothing":
+            return $Json$Decode.succeed($Maybe.Nothing);}
+         _U.badCase($moduleName,
+         "between lines 508 and 514");
+      }();
+   });
+   var Jedi = F5(function (a,
+   b,
+   c,
+   d,
+   e) {
+      return {_: {}
+             ,apprentice: e
+             ,homeworld: c
+             ,id: a
+             ,master: d
+             ,name: b};
+   });
+   var decodeJedi = A6($Json$Decode.object5,
+   Jedi,
+   A2($Json$Decode._op[":="],
+   "id",
+   $Json$Decode.$int),
+   A2($Json$Decode._op[":="],
+   "name",
+   $Json$Decode.string),
+   A2($Json$Decode._op[":="],
+   "homeworld",
+   $World.decodeWorld),
+   A2($Json$Decode._op[":="],
+   "master",
+   decodeJediUrl),
+   A2($Json$Decode._op[":="],
+   "apprentice",
+   decodeJediUrl));
+   var fetchJedi = F4(function (sleepMillis,
+   insertPos,
+   jediUrl,
+   model) {
+      return function () {
+         var $ = A2($Http.getWithAbort,
+         decodeJedi,
+         jediUrl.url),
+         sendTask = $._0,
+         abortTask = $._1;
+         var abortEffect = $Effects.task($Task.map(function (_v12) {
+            return function () {
+               return NoAction;
+            }();
+         })($Task.toMaybe(abortTask)));
+         var request = {_: {}
+                       ,abort: abortEffect
+                       ,id: model.nextRequestId
+                       ,insertPos: insertPos
+                       ,jediUrl: jediUrl
+                       ,scrollPos: model.scrollPos};
+         var sendEffect = $Effects.task($Task.map(SetJedi(request))($Task.toResult(A2($Task.andThen,
+         $Task.sleep(sleepMillis),
+         function (_v14) {
+            return function () {
+               return sendTask;
+            }();
+         }))));
+         return {ctor: "_Tuple2"
+                ,_0: _U.replace([["jediRequests"
+                                 ,A2($List._op["::"],
+                                 request,
+                                 model.jediRequests)]
+                                ,["nextRequestId"
+                                 ,model.nextRequestId + 1]],
+                model)
+                ,_1: sendEffect};
+      }();
+   });
+   var init = F3(function (nbSlots,
+   scrollSpeed,
+   jediUrlId) {
+      return function () {
+         var model = A2(initModel,
+         nbSlots,
+         scrollSpeed);
+         return A4(fetchJedi,
+         0,
+         nbSlots / 2 | 0,
+         mkJediUrl(jediUrlId),
+         model);
+      }();
+   });
+   var retryRequest = F3(function (sleepMillis,
+   request,
+   model) {
+      return function () {
+         var model$ = _U.replace([["jediRequests"
+                                  ,A2(removeRequest,
+                                  request,
+                                  model.jediRequests)]],
+         model);
+         var newInsertPos = A3(adjustPos,
+         request.insertPos,
+         request.scrollPos,
+         model$.scrollPos);
+         return A4(fetchJedi,
+         sleepMillis,
+         newInsertPos,
+         request.jediUrl,
+         model$);
+      }();
+   });
+   var resumeAllRequests = function (model) {
+      return function () {
+         var model$ = _U.replace([["requestsToResume"
+                                  ,_L.fromArray([])]],
+         model);
+         return A2($Lib.bindAll,
+         $Lib.pure(model$),
+         A2($List.map,
+         retryRequest(0),
+         model.requestsToResume));
+      }();
+   };
+   var setWorld = F2(function (mWorld,
+   model) {
+      return function () {
+         var model$ = _U.replace([["world"
+                                  ,mWorld]],
+         model);
+         return A2($Lib.any,
+         A2($Basics.flip,onWorld,mWorld),
+         model$.jediSlots) ? abortAndSaveAllRequests(model$) : resumeAllRequests(model$);
+      }();
+   });
+   var maybeFetchJedi = F4(function (pos,
+   nextPos,
+   getNextUrl,
+   model) {
+      return function () {
+         var mNext = A2(needJediAt,
+         nextPos,
+         model) ? A2($Lib.andThenAndThen,
+         A2($Array.get,
+         pos,
+         model.jediSlots),
+         getNextUrl) : $Maybe.Nothing;
+         return function () {
+            switch (mNext.ctor)
+            {case "Just":
+               return A4(fetchJedi,
+                 0,
+                 nextPos,
+                 mNext._0,
+                 model);
+               case "Nothing":
+               return $Lib.pure(model);}
+            _U.badCase($moduleName,
+            "between lines 343 and 347");
+         }();
+      }();
+   });
+   var maybeFetchJedisAround = F2(function (pos,
+   model) {
+      return A2($Lib._op[">>="],
+      A2($Lib._op[">>="],
+      $Lib.pure(model),
+      A3(maybeFetchJedi,
+      pos,
+      pos - 1,
+      function (_) {
+         return _.master;
+      })),
+      A3(maybeFetchJedi,
+      pos,
+      pos + 1,
+      function (_) {
+         return _.apprentice;
+      }));
+   });
+   var setJedi = F3(function (request,
+   newJediResult,
+   model) {
+      return function () {
+         var maybeRetry = function () {
+            switch (newJediResult.ctor)
+            {case "Err":
+               return A2(retryRequest,
+                 1000,
+                 request);
+               case "Ok": return $Lib.pure;}
+            _U.badCase($moduleName,
+            "between lines 187 and 193");
+         }();
+         var adjustedPos = A3(adjustPos,
+         request.insertPos,
+         request.scrollPos,
+         model.scrollPos);
+         var newMJedi = $Result.toMaybe(newJediResult);
+         var newJediSlots = A2($Lib.inBounds,
+         adjustedPos,
+         model.jediSlots) ? A3($Array.set,
+         adjustedPos,
+         newMJedi,
+         model.jediSlots) : model.jediSlots;
+         var model$ = _U.replace([["jediRequests"
+                                  ,A2(removeRequest,
+                                  request,
+                                  model.jediRequests)]
+                                 ,["jediSlots",newJediSlots]],
+         model);
+         var maybeAbortAll = A2(onWorld,
+         newMJedi,
+         model.world) ? abortAndSaveAllRequests : $Lib.pure;
+         return A2($Lib._op[">>="],
+         A2($Lib._op[">>="],
+         A2(maybeFetchJedisAround,
+         adjustedPos,
+         model$),
+         maybeRetry),
+         maybeAbortAll);
+      }();
+   });
+   var doScroll = F3(function (model,
+   dir,
+   scrollSpeed) {
+      return $Basics.not(A3(canScroll,
+      dir,
+      scrollSpeed,
+      model.jediSlots)) ? $Lib.pure(model) : function () {
+         var emptySlots = A2($Array.repeat,
+         scrollSpeed,
+         $Maybe.Nothing);
+         var slotsLength = $Array.length(model.jediSlots);
+         var $ = function () {
+            switch (dir.ctor)
+            {case "Down":
+               return {ctor: "_Tuple3"
+                      ,_0: A2($Array.append,
+                      A3($Array.slice,
+                      scrollSpeed,
+                      slotsLength,
+                      model.jediSlots),
+                      emptySlots)
+                      ,_1: model.scrollPos + scrollSpeed
+                      ,_2: slotsLength - scrollSpeed - 1};
+               case "Up":
+               return {ctor: "_Tuple3"
+                      ,_0: A2($Array.append,
+                      emptySlots,
+                      A3($Array.slice,
+                      0,
+                      slotsLength - scrollSpeed,
+                      model.jediSlots))
+                      ,_1: model.scrollPos - scrollSpeed
+                      ,_2: scrollSpeed};}
+            _U.badCase($moduleName,
+            "between lines 262 and 274");
+         }(),
+         newJedis = $._0,
+         newScrollPos = $._1,
+         endJediPos = $._2;
+         return A2($Lib._op[">>="],
+         A2($Lib._op[">>="],
+         $Lib.pure(_U.replace([["jediSlots"
+                               ,newJedis]
+                              ,["scrollPos",newScrollPos]],
+         model)),
+         abortRequests),
+         maybeFetchJedisAround(endJediPos));
+      }();
+   });
+   var update = F2(function (action,
+   model) {
+      return function () {
+         switch (action.ctor)
+         {case "NoAction":
+            return $Lib.pure(model);
+            case "Scroll":
+            return A3(doScroll,
+              model,
+              action._0,
+              action._1);
+            case "SetJedi":
+            return A3(setJedi,
+              action._0,
+              action._1,
+              model);
+            case "SetWorld":
+            return A2(setWorld,
+              action._0,
+              model);}
+         _U.badCase($moduleName,
+         "between lines 132 and 143");
+      }();
+   });
+   var Model = F7(function (a,
+   b,
+   c,
+   d,
+   e,
+   f,
+   g) {
+      return {_: {}
+             ,jediRequests: e
+             ,jediSlots: b
+             ,nextRequestId: g
+             ,requestsToResume: f
+             ,scrollPos: c
+             ,scrollSpeed: d
+             ,world: a};
+   });
+   _elm.JediList.values = {_op: _op
+                          ,init: init
+                          ,mkJediUrl: mkJediUrl
+                          ,update: update
+                          ,view: view
+                          ,Model: Model
+                          ,SetWorld: SetWorld};
+   return _elm.JediList.values;
+};
 Elm.Json = Elm.Json || {};
 Elm.Json.Decode = Elm.Json.Decode || {};
 Elm.Json.Decode.make = function (_elm) {
@@ -4231,6 +4876,129 @@ Elm.Json.Encode.make = function (_elm) {
                              ,object: object
                              ,Value: Value};
    return _elm.Json.Encode.values;
+};
+Elm.Lib = Elm.Lib || {};
+Elm.Lib.make = function (_elm) {
+   "use strict";
+   _elm.Lib = _elm.Lib || {};
+   if (_elm.Lib.values)
+   return _elm.Lib.values;
+   var _op = {},
+   _N = Elm.Native,
+   _U = _N.Utils.make(_elm),
+   _L = _N.List.make(_elm),
+   $moduleName = "Lib",
+   $Array = Elm.Array.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Effects = Elm.Effects.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var aLast = function (arr) {
+      return A2($Array.get,
+      $Array.length(arr) - 1,
+      arr);
+   };
+   var aFirst = $Array.get(0);
+   _op[">>="] = F2(function (_v0,
+   f) {
+      return function () {
+         switch (_v0.ctor)
+         {case "_Tuple2":
+            return function () {
+                 var $ = f(_v0._0),
+                 model$ = $._0,
+                 effects$ = $._1;
+                 return {ctor: "_Tuple2"
+                        ,_0: model$
+                        ,_1: $Effects.batch(_L.fromArray([_v0._1
+                                                         ,effects$]))};
+              }();}
+         _U.badCase($moduleName,
+         "between lines 57 and 59");
+      }();
+   });
+   var bindAll = F2(function (modelEffects,
+   fs) {
+      return A3($List.foldl,
+      $Basics.flip(F2(function (x,y) {
+         return A2(_op[">>="],x,y);
+      })),
+      modelEffects,
+      fs);
+   });
+   var pure = function (model) {
+      return {ctor: "_Tuple2"
+             ,_0: model
+             ,_1: $Effects.none};
+   };
+   var andThenAndThen = F2(function (mmValue,
+   f) {
+      return A2($Maybe.andThen,
+      mmValue,
+      A2($Basics.flip,
+      $Maybe.andThen,
+      f));
+   });
+   var mMap2 = F3(function (func,
+   ma,
+   mb) {
+      return function () {
+         var _v4 = {ctor: "_Tuple2"
+                   ,_0: ma
+                   ,_1: mb};
+         switch (_v4.ctor)
+         {case "_Tuple2":
+            switch (_v4._0.ctor)
+              {case "Just":
+                 switch (_v4._1.ctor)
+                   {case "Just":
+                      return $Maybe.Just(A2(func,
+                        _v4._0._0,
+                        _v4._1._0));}
+                   break;}
+              break;}
+         return $Maybe.Nothing;
+      }();
+   });
+   var any = F2(function (pred,
+   array) {
+      return _U.cmp($Array.length(A2($Array.filter,
+      pred,
+      array)),
+      0) > 0;
+   });
+   var notNothing = function (maybe) {
+      return function () {
+         switch (maybe.ctor)
+         {case "Just": return true;
+            case "Nothing": return false;}
+         _U.badCase($moduleName,
+         "between lines 16 and 18");
+      }();
+   };
+   var isNothing = function ($) {
+      return $Basics.not(notNothing($));
+   };
+   var inBounds = F2(function (pos,
+   slots) {
+      return _U.cmp(pos,
+      0) > -1 && _U.cmp(pos,
+      $Array.length(slots)) < 0;
+   });
+   _elm.Lib.values = {_op: _op
+                     ,inBounds: inBounds
+                     ,notNothing: notNothing
+                     ,isNothing: isNothing
+                     ,any: any
+                     ,mMap2: mMap2
+                     ,andThenAndThen: andThenAndThen
+                     ,pure: pure
+                     ,bindAll: bindAll
+                     ,aFirst: aFirst
+                     ,aLast: aLast};
+   return _elm.Lib.values;
 };
 Elm.List = Elm.List || {};
 Elm.List.make = function (_elm) {
@@ -4598,759 +5366,111 @@ Elm.Main.make = function (_elm) {
    _U = _N.Utils.make(_elm),
    _L = _N.List.make(_elm),
    $moduleName = "Main",
-   $Array = Elm.Array.make(_elm),
    $Basics = Elm.Basics.make(_elm),
    $Effects = Elm.Effects.make(_elm),
    $Html = Elm.Html.make(_elm),
    $Html$Attributes = Elm.Html.Attributes.make(_elm),
-   $Html$Events = Elm.Html.Events.make(_elm),
-   $Http = Elm.Http.make(_elm),
-   $Json$Decode = Elm.Json.Decode.make(_elm),
+   $JediList = Elm.JediList.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
+   $PlanetMonitor = Elm.PlanetMonitor.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
    $StartApp = Elm.StartApp.make(_elm),
-   $Task = Elm.Task.make(_elm);
-   var aLast = function (arr) {
-      return A2($Array.get,
-      $Array.length(arr) - 1,
-      arr);
-   };
-   var aFirst = $Array.get(0);
-   _op[">>="] = F2(function (_v0,
-   f) {
-      return function () {
-         switch (_v0.ctor)
-         {case "_Tuple2":
-            return function () {
-                 var $ = f(_v0._0),
-                 model$ = $._0,
-                 effects$ = $._1;
-                 return {ctor: "_Tuple2"
-                        ,_0: model$
-                        ,_1: $Effects.batch(_L.fromArray([_v0._1
-                                                         ,effects$]))};
-              }();}
-         _U.badCase($moduleName,
-         "between lines 622 and 624");
-      }();
-   });
-   var bindAll = F2(function (modelEffects,
-   fs) {
-      return A3($List.foldl,
-      $Basics.flip(F2(function (x,y) {
-         return A2(_op[">>="],x,y);
-      })),
-      modelEffects,
-      fs);
-   });
-   var pure = function (model) {
-      return {ctor: "_Tuple2"
-             ,_0: model
-             ,_1: $Effects.none};
-   };
-   var andThenAndThen = F2(function (mmValue,
-   f) {
-      return A2($Maybe.andThen,
-      mmValue,
-      A2($Basics.flip,
-      $Maybe.andThen,
-      f));
-   });
-   var mMap2 = F3(function (func,
-   ma,
-   mb) {
-      return function () {
-         var _v4 = {ctor: "_Tuple2"
-                   ,_0: ma
-                   ,_1: mb};
-         switch (_v4.ctor)
-         {case "_Tuple2":
-            switch (_v4._0.ctor)
-              {case "Just":
-                 switch (_v4._1.ctor)
-                   {case "Just":
-                      return $Maybe.Just(A2(func,
-                        _v4._0._0,
-                        _v4._1._0));}
-                   break;}
-              break;}
-         return $Maybe.Nothing;
-      }();
-   });
-   var any = F2(function (pred,
-   array) {
-      return _U.cmp($Array.length(A2($Array.filter,
-      pred,
-      array)),
-      0) > 0;
-   });
-   var notNothing = function (maybe) {
-      return function () {
-         switch (maybe.ctor)
-         {case "Just": return true;
-            case "Nothing": return false;}
-         _U.badCase($moduleName,
-         "between lines 581 and 583");
-      }();
-   };
-   var isNothing = function ($) {
-      return $Basics.not(notNothing($));
-   };
-   var inBounds = F2(function (pos,
-   slots) {
-      return _U.cmp(pos,
-      0) > -1 && _U.cmp(pos,
-      $Array.length(slots)) < 0;
-   });
-   var viewPlanetMonitor = function (mWorld) {
-      return A2($Html.h1,
-      _L.fromArray([$Html$Attributes.$class("css-planet-monitor")]),
-      _L.fromArray([$Html.text(A2($Basics._op["++"],
-      "Obi-Wan currently ",
-      function () {
-         switch (mWorld.ctor)
-         {case "Just":
-            return A2($Basics._op["++"],
-              "on ",
-              mWorld._0.name);
-            case "Nothing":
-            return "in transit";}
-         _U.badCase($moduleName,
-         "between lines 461 and 463");
-      }()))]));
-   };
-   var onWorld = F2(function (mJedi,
-   mWorld) {
-      return function () {
-         var _v13 = A3(mMap2,
-         F2(function (v0,v1) {
-            return {ctor: "_Tuple2"
-                   ,_0: v0
-                   ,_1: v1};
-         }),
-         mWorld,
-         mJedi);
-         switch (_v13.ctor)
-         {case "Just":
-            switch (_v13._0.ctor)
-              {case "_Tuple2":
-                 return _U.eq(_v13._0._1.homeworld.id,
-                   _v13._0._0.id);}
-              break;
-            case "Nothing": return false;}
-         _U.badCase($moduleName,
-         "between lines 437 and 440");
-      }();
-   });
-   var viewJedi = F2(function (mWorld,
-   mJedi) {
-      return A2($Html.li,
-      _L.fromArray([$Html$Attributes.$class("css-slot")
-                   ,$Html$Attributes.style(A2(onWorld,
-                   mJedi,
-                   mWorld) ? _L.fromArray([{ctor: "_Tuple2"
-                                           ,_0: "color"
-                                           ,_1: "red"}]) : _L.fromArray([]))]),
-      function () {
-         switch (mJedi.ctor)
-         {case "Just":
-            return _L.fromArray([A2($Html.h3,
-                                _L.fromArray([]),
-                                _L.fromArray([$Html.text(mJedi._0.name)]))
-                                ,A2($Html.h6,
-                                _L.fromArray([]),
-                                _L.fromArray([$Html.text(mJedi._0.homeworld.name)]))]);
-            case "Nothing":
-            return _L.fromArray([]);}
-         _U.badCase($moduleName,
-         "between lines 485 and 491");
-      }());
-   });
-   var canScroll = F3(function (upOrDown,
-   scrollSpeed,
-   jediSlots) {
-      return function () {
-         var $ = function () {
-            switch (upOrDown.ctor)
-            {case "Down":
-               return {ctor: "_Tuple4"
-                      ,_0: aLast
-                      ,_1: function (_) {
-                         return _.apprentice;
-                      }
-                      ,_2: scrollSpeed
-                      ,_3: $Array.length(jediSlots)};
-               case "Up":
-               return {ctor: "_Tuple4"
-                      ,_0: aFirst
-                      ,_1: function (_) {
-                         return _.master;
-                      }
-                      ,_2: 0
-                      ,_3: 0 - scrollSpeed};}
-            _U.badCase($moduleName,
-            "between lines 410 and 422");
-         }(),
-         getFirstOrLast = $._0,
-         apprenticeOrMaster = $._1,
-         scrollStart = $._2,
-         scrollEnd = $._3;
-         var jediInView = any(notNothing)(A2($Array.slice,
-         scrollStart,
-         scrollEnd)(jediSlots));
-         var loadedJedis = A2($Array.filter,
-         notNothing,
-         jediSlots);
-         var next = A2(andThenAndThen,
-         getFirstOrLast(loadedJedis),
-         apprenticeOrMaster);
-         return notNothing(next) && jediInView;
-      }();
-   });
-   var haveJediAt = F2(function (pos,
-   _v20) {
-      return function () {
-         return !_U.eq(A2($Array.get,
-         pos,
-         _v20.jediSlots),
-         $Maybe.Just($Maybe.Nothing));
-      }();
-   });
-   var needJediAt = F2(function (pos,
-   model) {
-      return A2(inBounds,
-      pos,
-      model.jediSlots) && $Basics.not(A2(haveJediAt,
-      pos,
-      model));
-   });
-   var removeRequest = F2(function (request,
-   requests) {
-      return A2($List.filter,
-      function (r) {
-         return !_U.eq(r,request);
-      },
-      requests);
-   });
-   var adjustPos = F3(function (pos,
-   oldScrollPos,
-   newScrollPos) {
-      return function () {
-         var offset = oldScrollPos - newScrollPos;
-         return pos + offset;
-      }();
-   });
-   var abortAndSaveAllRequests = function (model) {
-      return {ctor: "_Tuple2"
-             ,_0: _U.replace([["jediRequests"
-                              ,_L.fromArray([])]
-                             ,["requestsToResume"
-                              ,A2($List.append,
-                              model.requestsToResume,
-                              model.jediRequests)]],
-             model)
-             ,_1: $Effects.batch(A2($List.map,
-             function (_) {
-                return _.abort;
-             },
-             model.jediRequests))};
-   };
-   var abortRequests = function (model) {
-      return function () {
-         var $ = A2($List.partition,
-         function (request) {
-            return A2(inBounds,
-            A3(adjustPos,
-            request.insertPos,
-            request.scrollPos,
-            model.scrollPos),
-            model.jediSlots);
-         },
-         model.jediRequests),
-         newRequests = $._0,
-         requestsToAbort = $._1;
-         var aborts = A2($List.map,
-         function (_) {
-            return _.abort;
-         },
-         requestsToAbort);
-         return {ctor: "_Tuple2"
-                ,_0: _U.replace([["jediRequests"
-                                 ,newRequests]],
-                model)
-                ,_1: $Effects.batch(aborts)};
-      }();
-   };
-   var NoAction = {ctor: "NoAction"};
-   var Scroll = F2(function (a,b) {
-      return {ctor: "Scroll"
-             ,_0: a
-             ,_1: b};
-   });
-   var viewScrollButton = F5(function (address,
-   scrollDisabled,
-   jediSlots,
-   scrollSpeed,
-   dir) {
-      return function () {
-         var clickHandler = A2($Html$Events.onClick,
-         address,
-         A2(Scroll,dir,scrollSpeed));
-         var enabled = $Basics.not(scrollDisabled) && A3(canScroll,
-         dir,
-         scrollSpeed,
-         jediSlots);
-         var className = function () {
-            switch (dir.ctor)
-            {case "Down":
-               return "css-button-down";
-               case "Up":
-               return "css-button-up";}
-            _U.badCase($moduleName,
-            "between lines 507 and 513");
-         }();
-         var classes = $Html$Attributes.classList(_L.fromArray([{ctor: "_Tuple2"
-                                                                ,_0: className
-                                                                ,_1: true}
-                                                               ,{ctor: "_Tuple2"
-                                                                ,_0: "css-button-disabled"
-                                                                ,_1: $Basics.not(enabled)}]));
-         return A2($Html.button,
-         enabled ? _L.fromArray([classes
-                                ,clickHandler]) : _L.fromArray([classes]),
-         _L.fromArray([]));
-      }();
-   });
-   var SetJedi = F2(function (a,
-   b) {
-      return {ctor: "SetJedi"
-             ,_0: a
-             ,_1: b};
-   });
-   var SetWorld = function (a) {
-      return {ctor: "SetWorld"
+   $Task = Elm.Task.make(_elm),
+   $World = Elm.World.make(_elm);
+   var JediListAction = function (a) {
+      return {ctor: "JediListAction"
              ,_0: a};
    };
-   var initModel = F2(function (nbSlots,
-   scrollSpeed) {
-      return {_: {}
-             ,jediRequests: _L.fromArray([])
-             ,jediSlots: A2($Array.repeat,
-             nbSlots,
-             $Maybe.Nothing)
-             ,nextRequestId: 0
-             ,requestsToResume: _L.fromArray([])
-             ,scrollPos: 0
-             ,scrollSpeed: scrollSpeed
-             ,world: $Maybe.Nothing};
-   });
-   var mkJediUrl = function (id) {
-      return {_: {}
-             ,id: id
-             ,url: A2($Basics._op["++"],
-             "http://localhost:3000/dark-jedis/",
-             $Basics.toString(id))};
+   var PlanetMonitorAction = function (a) {
+      return {ctor: "PlanetMonitorAction"
+             ,_0: a};
    };
-   var darthSidious = mkJediUrl(3616);
-   var Down = {ctor: "Down"};
-   var Up = {ctor: "Up"};
-   var viewScrollButtons = F2(function (address,
+   var update = F2(function (action,
    model) {
       return function () {
-         var scrollDisabled = A2(any,
-         A2($Basics.flip,
-         onWorld,
-         model.world),
-         model.jediSlots);
-         return A2($Html.div,
-         _L.fromArray([$Html$Attributes.$class("css-scroll-buttons")]),
-         A2($List.map,
-         A4(viewScrollButton,
-         address,
-         scrollDisabled,
-         model.jediSlots,
-         model.scrollSpeed),
-         _L.fromArray([Up,Down])));
+         switch (action.ctor)
+         {case "JediListAction":
+            return function () {
+                 var $ = A2($JediList.update,
+                 action._0,
+                 model.jediList),
+                 jediList = $._0,
+                 effects = $._1;
+                 return {ctor: "_Tuple2"
+                        ,_0: _U.replace([["jediList"
+                                         ,jediList]],
+                        model)
+                        ,_1: A2($Effects.map,
+                        JediListAction,
+                        effects)};
+              }();
+            case "PlanetMonitorAction":
+            return function () {
+                 var $ = A2($PlanetMonitor.update,
+                 action._0,
+                 model.planetMonitor),
+                 planetMonitor = $._0,
+                 effects = $._1;
+                 return {ctor: "_Tuple2"
+                        ,_0: _U.replace([["planetMonitor"
+                                         ,planetMonitor]],
+                        model)
+                        ,_1: A2($Effects.map,
+                        PlanetMonitorAction,
+                        effects)};
+              }();}
+         _U.badCase($moduleName,
+         "between lines 77 and 90");
       }();
-   });
-   var viewJediList = F2(function (address,
-   model) {
-      return A2($Html.div,
-      _L.fromArray([$Html$Attributes.$class("css-scrollable-list")]),
-      _L.fromArray([A2($Html.ul,
-                   _L.fromArray([$Html$Attributes.$class("css-slots")]),
-                   A2($List.map,
-                   viewJedi(model.world),
-                   $Array.toList(model.jediSlots)))
-                   ,A2(viewScrollButtons,
-                   address,
-                   model)]));
    });
    var view = F2(function (address,
    model) {
       return A2($Html.div,
       _L.fromArray([$Html$Attributes.$class("css-root")]),
-      _L.fromArray([viewPlanetMonitor(model.world)
-                   ,A2(viewJediList,
+      _L.fromArray([A2($PlanetMonitor.view,
+                   A2($Signal.forwardTo,
                    address,
-                   model)]));
+                   PlanetMonitorAction),
+                   model.planetMonitor)
+                   ,A2($JediList.view,
+                   A2($Signal.forwardTo,
+                   address,
+                   JediListAction),
+                   model.jediList)]));
    });
-   var JediRequest = F5(function (a,
-   b,
-   c,
-   d,
-   e) {
-      return {_: {}
-             ,abort: e
-             ,id: a
-             ,insertPos: c
-             ,jediUrl: b
-             ,scrollPos: d};
-   });
-   var JediUrl = F2(function (a,
-   b) {
-      return {_: {},id: a,url: b};
-   });
-   var decodeJediUrl = A2($Json$Decode.andThen,
-   A2($Json$Decode._op[":="],
-   "id",
-   $Json$Decode.oneOf(_L.fromArray([A2($Json$Decode.map,
-                                   $Maybe.Just,
-                                   $Json$Decode.$int)
-                                   ,$Json$Decode.$null($Maybe.Nothing)]))),
-   function (mId) {
-      return function () {
-         switch (mId.ctor)
-         {case "Just":
-            return A2($Json$Decode.object1,
-              function (url) {
-                 return $Maybe.Just(A2(JediUrl,
-                 mId._0,
-                 url));
-              },
-              A2($Json$Decode._op[":="],
-              "url",
-              $Json$Decode.string));
-            case "Nothing":
-            return $Json$Decode.succeed($Maybe.Nothing);}
-         _U.badCase($moduleName,
-         "between lines 560 and 566");
-      }();
-   });
-   var Jedi = F5(function (a,
-   b,
-   c,
-   d,
-   e) {
-      return {_: {}
-             ,apprentice: e
-             ,homeworld: c
-             ,id: a
-             ,master: d
-             ,name: b};
-   });
-   var World = F2(function (a,b) {
-      return {_: {},id: a,name: b};
-   });
-   var decodeWorld = A3($Json$Decode.object2,
-   World,
-   A2($Json$Decode._op[":="],
-   "id",
-   $Json$Decode.$int),
-   A2($Json$Decode._op[":="],
-   "name",
-   $Json$Decode.string));
-   var decodeJedi = A6($Json$Decode.object5,
-   Jedi,
-   A2($Json$Decode._op[":="],
-   "id",
-   $Json$Decode.$int),
-   A2($Json$Decode._op[":="],
-   "name",
-   $Json$Decode.string),
-   A2($Json$Decode._op[":="],
-   "homeworld",
-   decodeWorld),
-   A2($Json$Decode._op[":="],
-   "master",
-   decodeJediUrl),
-   A2($Json$Decode._op[":="],
-   "apprentice",
-   decodeJediUrl));
-   var fetchJedi = F4(function (sleepMillis,
-   insertPos,
-   jediUrl,
-   model) {
-      return function () {
-         var $ = A2($Http.getWithAbort,
-         decodeJedi,
-         jediUrl.url),
-         sendTask = $._0,
-         abortTask = $._1;
-         var abortEffect = $Effects.task($Task.map(function (_v25) {
-            return function () {
-               return NoAction;
-            }();
-         })($Task.toMaybe(abortTask)));
-         var request = {_: {}
-                       ,abort: abortEffect
-                       ,id: model.nextRequestId
-                       ,insertPos: insertPos
-                       ,jediUrl: jediUrl
-                       ,scrollPos: model.scrollPos};
-         var sendEffect = $Effects.task($Task.map(SetJedi(request))($Task.toResult(A2($Task.andThen,
-         $Task.sleep(sleepMillis),
-         function (_v27) {
-            return function () {
-               return sendTask;
-            }();
-         }))));
-         return {ctor: "_Tuple2"
-                ,_0: _U.replace([["jediRequests"
-                                 ,A2($List._op["::"],
-                                 request,
-                                 model.jediRequests)]
-                                ,["nextRequestId"
-                                 ,model.nextRequestId + 1]],
-                model)
-                ,_1: sendEffect};
-      }();
-   });
-   var init = F3(function (nbSlots,
-   scrollSpeed,
-   jediUrl) {
-      return A4(fetchJedi,
-      0,
-      nbSlots / 2 | 0,
-      jediUrl,
-      A2(initModel,
+   var init = function () {
+      var $ = $PlanetMonitor.init,
+      planetMonitor = $._0,
+      pmEffects = $._1;
+      var initialJediId = 3616;
+      var scrollSpeed = 2;
+      var nbSlots = 5;
+      var $ = A3($JediList.init,
       nbSlots,
-      scrollSpeed));
-   });
-   var retryRequest = F3(function (sleepMillis,
-   request,
-   model) {
-      return function () {
-         var model$ = _U.replace([["jediRequests"
-                                  ,A2(removeRequest,
-                                  request,
-                                  model.jediRequests)]],
-         model);
-         var newInsertPos = A3(adjustPos,
-         request.insertPos,
-         request.scrollPos,
-         model$.scrollPos);
-         return A4(fetchJedi,
-         sleepMillis,
-         newInsertPos,
-         request.jediUrl,
-         model$);
-      }();
-   });
-   var resumeAllRequests = function (model) {
-      return function () {
-         var model$ = _U.replace([["requestsToResume"
-                                  ,_L.fromArray([])]],
-         model);
-         return A2(bindAll,
-         pure(model$),
-         A2($List.map,
-         retryRequest(0),
-         model.requestsToResume));
-      }();
-   };
-   var setWorld = F2(function (mWorld,
-   model) {
-      return function () {
-         var model$ = _U.replace([["world"
-                                  ,mWorld]],
-         model);
-         return A2(any,
-         A2($Basics.flip,onWorld,mWorld),
-         model$.jediSlots) ? abortAndSaveAllRequests(model$) : resumeAllRequests(model$);
-      }();
-   });
-   var maybeFetchJedi = F4(function (pos,
-   nextPos,
-   getNextUrl,
-   model) {
-      return function () {
-         var mNext = A2(needJediAt,
-         nextPos,
-         model) ? A2(andThenAndThen,
-         A2($Array.get,
-         pos,
-         model.jediSlots),
-         getNextUrl) : $Maybe.Nothing;
-         return function () {
-            switch (mNext.ctor)
-            {case "Just":
-               return A4(fetchJedi,
-                 0,
-                 nextPos,
-                 mNext._0,
-                 model);
-               case "Nothing":
-               return pure(model);}
-            _U.badCase($moduleName,
-            "between lines 369 and 373");
-         }();
-      }();
-   });
-   var maybeFetchJedisAround = F2(function (pos,
-   model) {
-      return A2(_op[">>="],
-      A2(_op[">>="],
-      pure(model),
-      A3(maybeFetchJedi,
-      pos,
-      pos - 1,
-      function (_) {
-         return _.master;
-      })),
-      A3(maybeFetchJedi,
-      pos,
-      pos + 1,
-      function (_) {
-         return _.apprentice;
-      }));
-   });
-   var setJedi = F3(function (request,
-   newJediResult,
-   model) {
-      return function () {
-         var maybeRetry = function () {
-            switch (newJediResult.ctor)
-            {case "Err":
-               return A2(retryRequest,
-                 1000,
-                 request);
-               case "Ok": return pure;}
-            _U.badCase($moduleName,
-            "between lines 211 and 217");
-         }();
-         var adjustedPos = A3(adjustPos,
-         request.insertPos,
-         request.scrollPos,
-         model.scrollPos);
-         var newMJedi = $Result.toMaybe(newJediResult);
-         var newJediSlots = A2(inBounds,
-         adjustedPos,
-         model.jediSlots) ? A3($Array.set,
-         adjustedPos,
-         newMJedi,
-         model.jediSlots) : model.jediSlots;
-         var model$ = _U.replace([["jediRequests"
-                                  ,A2(removeRequest,
-                                  request,
-                                  model.jediRequests)]
-                                 ,["jediSlots",newJediSlots]],
-         model);
-         var maybeAbortAll = A2(onWorld,
-         newMJedi,
-         model.world) ? abortAndSaveAllRequests : pure;
-         return A2(_op[">>="],
-         A2(_op[">>="],
-         A2(maybeFetchJedisAround,
-         adjustedPos,
-         model$),
-         maybeRetry),
-         maybeAbortAll);
-      }();
-   });
-   var doScroll = F3(function (model,
-   dir,
-   scrollSpeed) {
-      return $Basics.not(A3(canScroll,
-      dir,
       scrollSpeed,
-      model.jediSlots)) ? pure(model) : function () {
-         var emptySlots = A2($Array.repeat,
-         scrollSpeed,
-         $Maybe.Nothing);
-         var slotsLength = $Array.length(model.jediSlots);
-         var $ = function () {
-            switch (dir.ctor)
-            {case "Down":
-               return {ctor: "_Tuple3"
-                      ,_0: A2($Array.append,
-                      A3($Array.slice,
-                      scrollSpeed,
-                      slotsLength,
-                      model.jediSlots),
-                      emptySlots)
-                      ,_1: model.scrollPos + scrollSpeed
-                      ,_2: slotsLength - scrollSpeed - 1};
-               case "Up":
-               return {ctor: "_Tuple3"
-                      ,_0: A2($Array.append,
-                      emptySlots,
-                      A3($Array.slice,
-                      0,
-                      slotsLength - scrollSpeed,
-                      model.jediSlots))
-                      ,_1: model.scrollPos - scrollSpeed
-                      ,_2: scrollSpeed};}
-            _U.badCase($moduleName,
-            "between lines 286 and 298");
-         }(),
-         newJedis = $._0,
-         newScrollPos = $._1,
-         endJediPos = $._2;
-         return A2(_op[">>="],
-         A2(_op[">>="],
-         pure(_U.replace([["jediSlots"
-                          ,newJedis]
-                         ,["scrollPos",newScrollPos]],
-         model)),
-         abortRequests),
-         maybeFetchJedisAround(endJediPos));
-      }();
-   });
-   var update = F2(function (action,
-   model) {
-      return function () {
-         switch (action.ctor)
-         {case "NoAction":
-            return pure(model);
-            case "Scroll":
-            return A3(doScroll,
-              model,
-              action._0,
-              action._1);
-            case "SetJedi":
-            return A3(setJedi,
-              action._0,
-              action._1,
-              model);
-            case "SetWorld":
-            return A2(setWorld,
-              action._0,
-              model);}
-         _U.badCase($moduleName,
-         "between lines 156 and 167");
-      }();
-   });
-   var Model = F7(function (a,
-   b,
-   c,
-   d,
-   e,
-   f,
-   g) {
+      initialJediId),
+      jediList = $._0,
+      jlEffects = $._1;
+      return {ctor: "_Tuple2"
+             ,_0: {_: {}
+                  ,jediList: jediList
+                  ,planetMonitor: planetMonitor}
+             ,_1: $Effects.batch(_L.fromArray([A2($Effects.map,
+                                              JediListAction,
+                                              jlEffects)
+                                              ,A2($Effects.map,
+                                              PlanetMonitorAction,
+                                              pmEffects)]))};
+   }();
+   var Model = F2(function (a,b) {
       return {_: {}
-             ,jediRequests: e
-             ,jediSlots: b
-             ,nextRequestId: g
-             ,requestsToResume: f
-             ,scrollPos: c
-             ,scrollSpeed: d
-             ,world: a};
+             ,jediList: b
+             ,planetMonitor: a};
    });
    var currentWorld = Elm.Native.Port.make(_elm).inboundSignal("currentWorld",
-   "Maybe.Maybe Main.World",
+   "Maybe.Maybe World.World",
    function (v) {
       return v === null ? Elm.Maybe.make(_elm).Nothing : Elm.Maybe.make(_elm).Just(typeof v === "object" && "id" in v && "name" in v ? {_: {}
                                                                                                                                        ,id: typeof v.id === "number" ? v.id : _U.badPort("a number",
@@ -5360,10 +5480,17 @@ Elm.Main.make = function (_elm) {
       v));
    });
    var app = $StartApp.start({_: {}
-                             ,init: A3(init,5,2,darthSidious)
+                             ,init: init
                              ,inputs: _L.fromArray([A2($Signal.map,
-                             SetWorld,
-                             currentWorld)])
+                                                   function ($) {
+                                                      return PlanetMonitorAction($PlanetMonitor.SetWorld($));
+                                                   },
+                                                   currentWorld)
+                                                   ,A2($Signal.map,
+                                                   function ($) {
+                                                      return JediListAction($JediList.SetWorld($));
+                                                   },
+                                                   currentWorld)])
                              ,update: update
                              ,view: view});
    var main = app.html;
@@ -5373,56 +5500,11 @@ Elm.Main.make = function (_elm) {
                       ,app: app
                       ,main: main
                       ,Model: Model
-                      ,World: World
-                      ,Jedi: Jedi
-                      ,JediUrl: JediUrl
-                      ,JediRequest: JediRequest
-                      ,Up: Up
-                      ,Down: Down
-                      ,mkJediUrl: mkJediUrl
-                      ,darthSidious: darthSidious
                       ,init: init
-                      ,initModel: initModel
-                      ,SetWorld: SetWorld
-                      ,SetJedi: SetJedi
-                      ,Scroll: Scroll
-                      ,NoAction: NoAction
+                      ,PlanetMonitorAction: PlanetMonitorAction
+                      ,JediListAction: JediListAction
                       ,update: update
-                      ,setWorld: setWorld
-                      ,setJedi: setJedi
-                      ,abortRequests: abortRequests
-                      ,abortAndSaveAllRequests: abortAndSaveAllRequests
-                      ,resumeAllRequests: resumeAllRequests
-                      ,doScroll: doScroll
-                      ,fetchJedi: fetchJedi
-                      ,retryRequest: retryRequest
-                      ,maybeFetchJedisAround: maybeFetchJedisAround
-                      ,maybeFetchJedi: maybeFetchJedi
-                      ,adjustPos: adjustPos
-                      ,removeRequest: removeRequest
-                      ,haveJediAt: haveJediAt
-                      ,needJediAt: needJediAt
-                      ,canScroll: canScroll
-                      ,onWorld: onWorld
-                      ,view: view
-                      ,viewPlanetMonitor: viewPlanetMonitor
-                      ,viewJediList: viewJediList
-                      ,viewJedi: viewJedi
-                      ,viewScrollButtons: viewScrollButtons
-                      ,viewScrollButton: viewScrollButton
-                      ,decodeJedi: decodeJedi
-                      ,decodeWorld: decodeWorld
-                      ,decodeJediUrl: decodeJediUrl
-                      ,inBounds: inBounds
-                      ,notNothing: notNothing
-                      ,isNothing: isNothing
-                      ,any: any
-                      ,mMap2: mMap2
-                      ,andThenAndThen: andThenAndThen
-                      ,pure: pure
-                      ,bindAll: bindAll
-                      ,aFirst: aFirst
-                      ,aLast: aLast};
+                      ,view: view};
    return _elm.Main.values;
 };
 Elm.Maybe = Elm.Maybe || {};
@@ -8279,16 +8361,16 @@ Elm.Native.Http.make = function(localRuntime) {
 	var List = Elm.List.make(localRuntime);
 	var Maybe = Elm.Maybe.make(localRuntime);
 	var Task = Elm.Native.Task.make(localRuntime);
-  var Utils = Elm.Native.Utils.make(localRuntime);
+	var Utils = Elm.Native.Utils.make(localRuntime);
 
 	function send(settings, request)
 	{
-    var req = new XMLHttpRequest();
+		var req = new XMLHttpRequest();
 
-    var abortTask = Task.asyncFunction(function(callback) {
-      req.abort();
-      return callback(Task.succeed(Utils.Tuple0));
-    });
+		var abortTask = Task.asyncFunction(function(callback) {
+			req.abort();
+			return callback(Task.succeed(Utils.Tuple0));
+		});
 
 		var sendTask = Task.asyncFunction(function(callback) {
 
@@ -8361,9 +8443,9 @@ Elm.Native.Http.make = function(localRuntime) {
 			}
 		});
 
-    return {ctor: "_Tuple2"
-            ,_0: sendTask
-            ,_1: abortTask};
+		return {ctor: "_Tuple2"
+		       ,_0: sendTask
+		       ,_1: abortTask};
 	}
 
 
@@ -12053,12 +12135,9 @@ Elm.Native.Utils.make = function(localRuntime) {
 	};
 };
 
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var createElement = require("./vdom/create-element.js")
+(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 
-module.exports = createElement
-
-},{"./vdom/create-element.js":6}],2:[function(require,module,exports){
+},{}],2:[function(require,module,exports){
 (function (global){
 var topLevel = typeof global !== 'undefined' ? global :
     typeof window !== 'undefined' ? window : {}
@@ -12076,8 +12155,8 @@ if (typeof document !== 'undefined') {
     module.exports = doccy;
 }
 
-}).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"min-document":24}],3:[function(require,module,exports){
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"min-document":1}],3:[function(require,module,exports){
 "use strict";
 
 module.exports = function isObject(x) {
@@ -13267,7 +13346,7 @@ var VNode = require('virtual-dom/vnode/vnode');
 var VText = require('virtual-dom/vnode/vtext');
 var diff = require('virtual-dom/vtree/diff');
 var patch = require('virtual-dom/vdom/patch');
-var createElement = require('virtual-dom/create-element');
+var createElement = require('virtual-dom/vdom/create-element');
 var isHook = require("virtual-dom/vnode/is-vhook");
 
 
@@ -13289,24 +13368,14 @@ Elm.Native.VirtualDom.make = function(elm)
 
 	var ATTRIBUTE_KEY = 'UniqueNameThatOthersAreVeryUnlikelyToUse';
 
-	function listToProperties(list)
+
+
+	// VIRTUAL DOM NODES
+
+
+	function text(string)
 	{
-		var object = {};
-		while (list.ctor !== '[]')
-		{
-			var entry = list._0;
-			if (entry.key === ATTRIBUTE_KEY)
-			{
-				object.attributes = object.attributes || {};
-				object.attributes[entry.value.attrKey] = entry.value.attrValue;
-			}
-			else
-			{
-				object[entry.key] = entry.value;
-			}
-			list = list._1;
-		}
-		return object;
+		return new VText(string);
 	}
 
 	function node(name)
@@ -13315,6 +13384,10 @@ Elm.Native.VirtualDom.make = function(elm)
 			return makeNode(name, propertyList, contents);
 		});
 	}
+
+
+	// BUILD VIRTUAL DOME NODES
+
 
 	function makeNode(name, propertyList, contents)
 	{
@@ -13337,7 +13410,7 @@ Elm.Native.VirtualDom.make = function(elm)
 
 		// ensure that setting text of an input does not move the cursor
 		var useSoftSet =
-			name === 'input'
+			(name === 'input' || name === 'textarea')
 			&& props.value !== undefined
 			&& !isHook(props.value);
 
@@ -13348,6 +13421,31 @@ Elm.Native.VirtualDom.make = function(elm)
 
 		return new VNode(name, props, List.toArray(contents), key, namespace);
 	}
+
+	function listToProperties(list)
+	{
+		var object = {};
+		while (list.ctor !== '[]')
+		{
+			var entry = list._0;
+			if (entry.key === ATTRIBUTE_KEY)
+			{
+				object.attributes = object.attributes || {};
+				object.attributes[entry.value.attrKey] = entry.value.attrValue;
+			}
+			else
+			{
+				object[entry.key] = entry.value;
+			}
+			list = list._1;
+		}
+		return object;
+	}
+
+
+
+	// PROPERTIES AND ATTRIBUTES
+
 
 	function property(key, value)
 	{
@@ -13367,6 +13465,63 @@ Elm.Native.VirtualDom.make = function(elm)
 			}
 		};
 	}
+
+
+
+	// NAMESPACED ATTRIBUTES
+
+
+	function attributeNS(namespace, key, value)
+	{
+		return {
+			key: key,
+			value: new AttributeHook(namespace, key, value)
+		};
+	}
+
+	function AttributeHook(namespace, key, value)
+	{
+		if (!(this instanceof AttributeHook))
+		{
+			return new AttributeHook(namespace, key, value);
+		}
+
+		this.namespace = namespace;
+		this.key = key;
+		this.value = value;
+	}
+
+	AttributeHook.prototype.hook = function (node, prop, prev)
+	{
+		if (prev
+			&& prev.type === 'AttributeHook'
+			&& prev.value === this.value
+			&& prev.namespace === this.namespace)
+		{
+			return;
+		}
+
+		node.setAttributeNS(this.namespace, prop, this.value);
+	};
+
+	AttributeHook.prototype.unhook = function (node, prop, next)
+	{
+		if (next
+			&& next.type === 'AttributeHook'
+			&& next.namespace === this.namespace)
+		{
+			return;
+		}
+
+		node.removeAttributeNS(this.namespace, this.key);
+	};
+
+	AttributeHook.prototype.type = 'AttributeHook';
+
+
+
+	// EVENTS
+
 
 	function on(name, options, decoder, createMessage)
 	{
@@ -13407,10 +13562,10 @@ Elm.Native.VirtualDom.make = function(elm)
 		}
 	};
 
-	function text(string)
-	{
-		return new VText(string);
-	}
+
+
+	// INTEGRATION WITH ELEMENTS
+
 
 	function ElementWidget(element)
 	{
@@ -13445,6 +13600,11 @@ Elm.Native.VirtualDom.make = function(elm)
 		});
 	}
 
+
+
+	// RENDER AND UPDATE
+
+
 	function render(model)
 	{
 		var element = Element.createNode('div');
@@ -13464,6 +13624,11 @@ Elm.Native.VirtualDom.make = function(elm)
 		var newNode = patch(node, patches);
 		return newNode;
 	}
+
+
+
+	// LAZINESS
+
 
 	function lazyRef(fn, a)
 	{
@@ -13494,15 +13659,17 @@ Elm.Native.VirtualDom.make = function(elm)
 
 	function Thunk(fn, args, thunk)
 	{
-		this.fn = fn;
-		this.args = args;
+		/* public (used by VirtualDom.js) */
 		this.vnode = null;
 		this.key = undefined;
+
+		/* private */
+		this.fn = fn;
+		this.args = args;
 		this.thunk = thunk;
 	}
 
 	Thunk.prototype.type = "Thunk";
-	Thunk.prototype.update = updateThunk;
 	Thunk.prototype.render = renderThunk;
 
 	function shouldUpdate(current, previous)
@@ -13527,35 +13694,27 @@ Elm.Native.VirtualDom.make = function(elm)
 		return false;
 	}
 
-	function updateThunk(previous, domNode)
+	function renderThunk(previous)
 	{
-		if (!shouldUpdate(this, previous))
+		if (previous == null || shouldUpdate(this, previous))
 		{
-			this.vnode = previous.vnode;
-			return;
+			return this.thunk();
 		}
-
-		if (!this.vnode)
+		else
 		{
-			this.vnode = this.thunk();
+			return previous.vnode;
 		}
-
-		var patches = diff(previous.vnode, this.vnode);
-		patch(domNode, patches);
 	}
 
-	function renderThunk()
-	{
-		return this.thunk();
-	}
 
-	return Elm.Native.VirtualDom.values = {
+	return elm.Native.VirtualDom.values = Elm.Native.VirtualDom.values = {
 		node: node,
 		text: text,
 		on: F4(on),
 
 		property: F2(property),
 		attribute: F2(attribute),
+		attributeNS: F3(attributeNS),
 
 		lazy: F2(lazyRef),
 		lazy2: F3(lazyRef2),
@@ -13569,10 +13728,71 @@ Elm.Native.VirtualDom.make = function(elm)
 	};
 };
 
-},{"virtual-dom/create-element":1,"virtual-dom/vdom/patch":9,"virtual-dom/vnode/is-vhook":13,"virtual-dom/vnode/vnode":18,"virtual-dom/vnode/vtext":20,"virtual-dom/vtree/diff":22}],24:[function(require,module,exports){
+},{"virtual-dom/vdom/create-element":6,"virtual-dom/vdom/patch":9,"virtual-dom/vnode/is-vhook":13,"virtual-dom/vnode/vnode":18,"virtual-dom/vnode/vtext":20,"virtual-dom/vtree/diff":22}]},{},[23]);
 
-},{}]},{},[23]);
-
+Elm.PlanetMonitor = Elm.PlanetMonitor || {};
+Elm.PlanetMonitor.make = function (_elm) {
+   "use strict";
+   _elm.PlanetMonitor = _elm.PlanetMonitor || {};
+   if (_elm.PlanetMonitor.values)
+   return _elm.PlanetMonitor.values;
+   var _op = {},
+   _N = Elm.Native,
+   _U = _N.Utils.make(_elm),
+   _L = _N.List.make(_elm),
+   $moduleName = "PlanetMonitor",
+   $Basics = Elm.Basics.make(_elm),
+   $Effects = Elm.Effects.make(_elm),
+   $Html = Elm.Html.make(_elm),
+   $Html$Attributes = Elm.Html.Attributes.make(_elm),
+   $Lib = Elm.Lib.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $World = Elm.World.make(_elm);
+   var view = F2(function (address,
+   model) {
+      return A2($Html.h1,
+      _L.fromArray([$Html$Attributes.$class("css-planet-monitor")]),
+      _L.fromArray([$Html.text(A2($Basics._op["++"],
+      "Obi-Wan currently ",
+      function () {
+         switch (model.ctor)
+         {case "Just":
+            return A2($Basics._op["++"],
+              "on ",
+              model._0.name);
+            case "Nothing":
+            return "in transit";}
+         _U.badCase($moduleName,
+         "between lines 37 and 39");
+      }()))]));
+   });
+   var update = F2(function (action,
+   model) {
+      return function () {
+         switch (action.ctor)
+         {case "SetWorld":
+            return $Lib.pure(action._0);}
+         _U.badCase($moduleName,
+         "between lines 27 and 29");
+      }();
+   });
+   var SetWorld = function (a) {
+      return {ctor: "SetWorld"
+             ,_0: a};
+   };
+   var init = {ctor: "_Tuple2"
+              ,_0: $Maybe.Nothing
+              ,_1: $Effects.none};
+   _elm.PlanetMonitor.values = {_op: _op
+                               ,init: init
+                               ,update: update
+                               ,view: view
+                               ,SetWorld: SetWorld};
+   return _elm.PlanetMonitor.values;
+};
 Elm.Result = Elm.Result || {};
 Elm.Result.make = function (_elm) {
    "use strict";
@@ -14667,6 +14887,7 @@ Elm.VirtualDom.make = function (_elm) {
       decoder,
       toMessage);
    });
+   var attributeNS = $Native$VirtualDom.attributeNS;
    var attribute = $Native$VirtualDom.attribute;
    var property = $Native$VirtualDom.property;
    var Property = {ctor: "Property"};
@@ -14682,6 +14903,7 @@ Elm.VirtualDom.make = function (_elm) {
                             ,fromElement: fromElement
                             ,property: property
                             ,attribute: attribute
+                            ,attributeNS: attributeNS
                             ,on: on
                             ,onWithOptions: onWithOptions
                             ,defaultOptions: defaultOptions
@@ -14690,4 +14912,37 @@ Elm.VirtualDom.make = function (_elm) {
                             ,lazy3: lazy3
                             ,Options: Options};
    return _elm.VirtualDom.values;
+};
+Elm.World = Elm.World || {};
+Elm.World.make = function (_elm) {
+   "use strict";
+   _elm.World = _elm.World || {};
+   if (_elm.World.values)
+   return _elm.World.values;
+   var _op = {},
+   _N = Elm.Native,
+   _U = _N.Utils.make(_elm),
+   _L = _N.List.make(_elm),
+   $moduleName = "World",
+   $Basics = Elm.Basics.make(_elm),
+   $Json$Decode = Elm.Json.Decode.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm);
+   var World = F2(function (a,b) {
+      return {_: {},id: a,name: b};
+   });
+   var decodeWorld = A3($Json$Decode.object2,
+   World,
+   A2($Json$Decode._op[":="],
+   "id",
+   $Json$Decode.$int),
+   A2($Json$Decode._op[":="],
+   "name",
+   $Json$Decode.string));
+   _elm.World.values = {_op: _op
+                       ,decodeWorld: decodeWorld
+                       ,World: World};
+   return _elm.World.values;
 };
