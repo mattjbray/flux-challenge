@@ -17,6 +17,7 @@ import Task
 --
 
 
+app : StartApp.App Model
 app =
   StartApp.start
     { init = init 5             -- nbSlots
@@ -28,6 +29,7 @@ app =
     }
 
 
+main : Signal Html
 main =
   app.html
 
