@@ -4084,31 +4084,27 @@ Elm.Http.make = function (_elm) {
                       ,RawNetworkError: RawNetworkError};
    return _elm.Http.values;
 };
-Elm.JediList = Elm.JediList || {};
-Elm.JediList.make = function (_elm) {
+Elm.Jedi = Elm.Jedi || {};
+Elm.Jedi.make = function (_elm) {
    "use strict";
-   _elm.JediList = _elm.JediList || {};
-   if (_elm.JediList.values)
-   return _elm.JediList.values;
+   _elm.Jedi = _elm.Jedi || {};
+   if (_elm.Jedi.values)
+   return _elm.Jedi.values;
    var _op = {},
    _N = Elm.Native,
    _U = _N.Utils.make(_elm),
    _L = _N.List.make(_elm),
-   $moduleName = "JediList",
+   $moduleName = "Jedi",
    $Array = Elm.Array.make(_elm),
    $Basics = Elm.Basics.make(_elm),
-   $Effects = Elm.Effects.make(_elm),
    $Html = Elm.Html.make(_elm),
    $Html$Attributes = Elm.Html.Attributes.make(_elm),
-   $Html$Events = Elm.Html.Events.make(_elm),
-   $Http = Elm.Http.make(_elm),
    $Json$Decode = Elm.Json.Decode.make(_elm),
    $Lib = Elm.Lib.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
-   $Task = Elm.Task.make(_elm),
    $World = Elm.World.make(_elm);
    var onWorld = F2(function (mJedi,
    mWorld) {
@@ -4130,211 +4126,44 @@ Elm.JediList.make = function (_elm) {
               break;
             case "Nothing": return false;}
          _U.badCase($moduleName,
-         "between lines 411 and 414");
+         "between lines 50 and 53");
       }();
    });
-   var viewJedi = F2(function (mWorld,
-   mJedi) {
-      return A2($Html.li,
-      _L.fromArray([$Html$Attributes.$class("css-slot")
-                   ,$Html$Attributes.style(A2(onWorld,
-                   mJedi,
-                   mWorld) ? _L.fromArray([{ctor: "_Tuple2"
-                                           ,_0: "color"
-                                           ,_1: "red"}]) : _L.fromArray([]))]),
-      function () {
-         switch (mJedi.ctor)
-         {case "Just":
-            return _L.fromArray([A2($Html.h3,
-                                _L.fromArray([]),
-                                _L.fromArray([$Html.text(mJedi._0.name)]))
-                                ,A2($Html.h6,
-                                _L.fromArray([]),
-                                _L.fromArray([$Html.text(mJedi._0.homeworld.name)]))]);
-            case "Nothing":
-            return _L.fromArray([]);}
-         _U.badCase($moduleName,
-         "between lines 440 and 446");
-      }());
+   var anyOnWorld = F2(function (mWorld,
+   jedis) {
+      return A2($Lib.any,
+      A2($Basics.flip,onWorld,mWorld),
+      jedis);
    });
-   var canScroll = F3(function (upOrDown,
-   scrollSpeed,
-   jediSlots) {
-      return function () {
-         var $ = function () {
-            switch (upOrDown.ctor)
-            {case "Down":
-               return {ctor: "_Tuple4"
-                      ,_0: $Lib.aLast
-                      ,_1: function (_) {
-                         return _.apprentice;
-                      }
-                      ,_2: scrollSpeed
-                      ,_3: $Array.length(jediSlots)};
-               case "Up":
-               return {ctor: "_Tuple4"
-                      ,_0: $Lib.aFirst
-                      ,_1: function (_) {
-                         return _.master;
-                      }
-                      ,_2: 0
-                      ,_3: 0 - scrollSpeed};}
-            _U.badCase($moduleName,
-            "between lines 384 and 396");
-         }(),
-         getFirstOrLast = $._0,
-         apprenticeOrMaster = $._1,
-         scrollStart = $._2,
-         scrollEnd = $._3;
-         var jediInView = $Lib.any($Lib.notNothing)(A2($Array.slice,
-         scrollStart,
-         scrollEnd)(jediSlots));
-         var loadedJedis = A2($Array.filter,
-         $Lib.notNothing,
-         jediSlots);
-         var next = A2($Lib.andThenAndThen,
-         getFirstOrLast(loadedJedis),
-         apprenticeOrMaster);
-         return $Lib.notNothing(next) && jediInView;
-      }();
+   var view = F2(function (mWorld,
+   jedi) {
+      return A2($Html.div,
+      _L.fromArray([$Html$Attributes.style(A2(onWorld,
+      $Maybe.Just(jedi),
+      mWorld) ? _L.fromArray([{ctor: "_Tuple2"
+                              ,_0: "color"
+                              ,_1: "red"}]) : _L.fromArray([]))]),
+      _L.fromArray([A2($Html.h3,
+                   _L.fromArray([]),
+                   _L.fromArray([$Html.text(jedi.name)]))
+                   ,A2($Html.h6,
+                   _L.fromArray([]),
+                   _L.fromArray([$Html.text(jedi.homeworld.name)]))]));
    });
-   var haveJediAt = F2(function (pos,
-   _v7) {
-      return function () {
-         return !_U.eq(A2($Array.get,
-         pos,
-         _v7.jediSlots),
-         $Maybe.Just($Maybe.Nothing));
-      }();
-   });
-   var needJediAt = F2(function (pos,
-   model) {
-      return A2($Lib.inBounds,
-      pos,
-      model.jediSlots) && $Basics.not(A2(haveJediAt,
-      pos,
-      model));
-   });
-   var removeRequest = F2(function (request,
-   requests) {
-      return A2($List.filter,
-      function (r) {
-         return !_U.eq(r,request);
+   var getPrevUrl = function (jedi) {
+      return A2($Maybe.map,
+      function (_) {
+         return _.url;
       },
-      requests);
-   });
-   var adjustPos = F3(function (pos,
-   oldScrollPos,
-   newScrollPos) {
-      return function () {
-         var offset = oldScrollPos - newScrollPos;
-         return pos + offset;
-      }();
-   });
-   var abortAndSaveAllRequests = function (model) {
-      return {ctor: "_Tuple2"
-             ,_0: _U.replace([["jediRequests"
-                              ,_L.fromArray([])]
-                             ,["requestsToResume"
-                              ,A2($List.append,
-                              model.requestsToResume,
-                              model.jediRequests)]],
-             model)
-             ,_1: $Effects.batch(A2($List.map,
-             function (_) {
-                return _.abort;
-             },
-             model.jediRequests))};
+      jedi.master);
    };
-   var abortRequests = function (model) {
-      return function () {
-         var $ = A2($List.partition,
-         function (request) {
-            return A2($Lib.inBounds,
-            A3(adjustPos,
-            request.insertPos,
-            request.scrollPos,
-            model.scrollPos),
-            model.jediSlots);
-         },
-         model.jediRequests),
-         newRequests = $._0,
-         requestsToAbort = $._1;
-         var aborts = A2($List.map,
-         function (_) {
-            return _.abort;
-         },
-         requestsToAbort);
-         return {ctor: "_Tuple2"
-                ,_0: _U.replace([["jediRequests"
-                                 ,newRequests]],
-                model)
-                ,_1: $Effects.batch(aborts)};
-      }();
+   var getNextUrl = function (jedi) {
+      return A2($Maybe.map,
+      function (_) {
+         return _.url;
+      },
+      jedi.apprentice);
    };
-   var NoAction = {ctor: "NoAction"};
-   var Scroll = F2(function (a,b) {
-      return {ctor: "Scroll"
-             ,_0: a
-             ,_1: b};
-   });
-   var viewScrollButton = F5(function (address,
-   scrollDisabled,
-   jediSlots,
-   scrollSpeed,
-   dir) {
-      return function () {
-         var clickHandler = A2($Html$Events.onClick,
-         address,
-         A2(Scroll,dir,scrollSpeed));
-         var enabled = $Basics.not(scrollDisabled) && A3(canScroll,
-         dir,
-         scrollSpeed,
-         jediSlots);
-         var className = function () {
-            switch (dir.ctor)
-            {case "Down":
-               return "css-button-down";
-               case "Up":
-               return "css-button-up";}
-            _U.badCase($moduleName,
-            "between lines 462 and 468");
-         }();
-         var classes = $Html$Attributes.classList(_L.fromArray([{ctor: "_Tuple2"
-                                                                ,_0: className
-                                                                ,_1: true}
-                                                               ,{ctor: "_Tuple2"
-                                                                ,_0: "css-button-disabled"
-                                                                ,_1: $Basics.not(enabled)}]));
-         return A2($Html.button,
-         enabled ? _L.fromArray([classes
-                                ,clickHandler]) : _L.fromArray([classes]),
-         _L.fromArray([]));
-      }();
-   });
-   var SetJedi = F2(function (a,
-   b) {
-      return {ctor: "SetJedi"
-             ,_0: a
-             ,_1: b};
-   });
-   var SetWorld = function (a) {
-      return {ctor: "SetWorld"
-             ,_0: a};
-   };
-   var initModel = F2(function (nbSlots,
-   scrollSpeed) {
-      return {_: {}
-             ,jediRequests: _L.fromArray([])
-             ,jediSlots: A2($Array.repeat,
-             nbSlots,
-             $Maybe.Nothing)
-             ,nextRequestId: 0
-             ,requestsToResume: _L.fromArray([])
-             ,scrollPos: 0
-             ,scrollSpeed: scrollSpeed
-             ,world: $Maybe.Nothing};
-   });
    var mkJediUrl = function (id) {
       return {_: {}
              ,id: id
@@ -4342,52 +4171,6 @@ Elm.JediList.make = function (_elm) {
              "http://localhost:3000/dark-jedis/",
              $Basics.toString(id))};
    };
-   var Down = {ctor: "Down"};
-   var Up = {ctor: "Up"};
-   var viewScrollButtons = F2(function (address,
-   model) {
-      return function () {
-         var scrollDisabled = A2($Lib.any,
-         A2($Basics.flip,
-         onWorld,
-         model.world),
-         model.jediSlots);
-         return A2($Html.div,
-         _L.fromArray([$Html$Attributes.$class("css-scroll-buttons")]),
-         A2($List.map,
-         A4(viewScrollButton,
-         address,
-         scrollDisabled,
-         model.jediSlots,
-         model.scrollSpeed),
-         _L.fromArray([Up,Down])));
-      }();
-   });
-   var view = F2(function (address,
-   model) {
-      return A2($Html.div,
-      _L.fromArray([$Html$Attributes.$class("css-scrollable-list")]),
-      _L.fromArray([A2($Html.ul,
-                   _L.fromArray([$Html$Attributes.$class("css-slots")]),
-                   A2($List.map,
-                   viewJedi(model.world),
-                   $Array.toList(model.jediSlots)))
-                   ,A2(viewScrollButtons,
-                   address,
-                   model)]));
-   });
-   var JediRequest = F5(function (a,
-   b,
-   c,
-   d,
-   e) {
-      return {_: {}
-             ,abort: e
-             ,id: a
-             ,insertPos: c
-             ,jediUrl: b
-             ,scrollPos: d};
-   });
    var JediUrl = F2(function (a,
    b) {
       return {_: {},id: a,url: b};
@@ -4415,7 +4198,7 @@ Elm.JediList.make = function (_elm) {
             case "Nothing":
             return $Json$Decode.succeed($Maybe.Nothing);}
          _U.badCase($moduleName,
-         "between lines 508 and 514");
+         "between lines 80 and 86");
       }();
    });
    var Jedi = F5(function (a,
@@ -4447,287 +4230,15 @@ Elm.JediList.make = function (_elm) {
    A2($Json$Decode._op[":="],
    "apprentice",
    decodeJediUrl));
-   var fetchJedi = F4(function (sleepMillis,
-   insertPos,
-   jediUrl,
-   model) {
-      return function () {
-         var $ = A2($Http.getWithAbort,
-         decodeJedi,
-         jediUrl.url),
-         sendTask = $._0,
-         abortTask = $._1;
-         var abortEffect = $Effects.task($Task.map(function (_v12) {
-            return function () {
-               return NoAction;
-            }();
-         })($Task.toMaybe(abortTask)));
-         var request = {_: {}
-                       ,abort: abortEffect
-                       ,id: model.nextRequestId
-                       ,insertPos: insertPos
-                       ,jediUrl: jediUrl
-                       ,scrollPos: model.scrollPos};
-         var sendEffect = $Effects.task($Task.map(SetJedi(request))($Task.toResult(A2($Task.andThen,
-         $Task.sleep(sleepMillis),
-         function (_v14) {
-            return function () {
-               return sendTask;
-            }();
-         }))));
-         return {ctor: "_Tuple2"
-                ,_0: _U.replace([["jediRequests"
-                                 ,A2($List._op["::"],
-                                 request,
-                                 model.jediRequests)]
-                                ,["nextRequestId"
-                                 ,model.nextRequestId + 1]],
-                model)
-                ,_1: sendEffect};
-      }();
-   });
-   var init = F3(function (nbSlots,
-   scrollSpeed,
-   jediUrlId) {
-      return function () {
-         var model = A2(initModel,
-         nbSlots,
-         scrollSpeed);
-         return A4(fetchJedi,
-         0,
-         nbSlots / 2 | 0,
-         mkJediUrl(jediUrlId),
-         model);
-      }();
-   });
-   var retryRequest = F3(function (sleepMillis,
-   request,
-   model) {
-      return function () {
-         var model$ = _U.replace([["jediRequests"
-                                  ,A2(removeRequest,
-                                  request,
-                                  model.jediRequests)]],
-         model);
-         var newInsertPos = A3(adjustPos,
-         request.insertPos,
-         request.scrollPos,
-         model$.scrollPos);
-         return A4(fetchJedi,
-         sleepMillis,
-         newInsertPos,
-         request.jediUrl,
-         model$);
-      }();
-   });
-   var resumeAllRequests = function (model) {
-      return function () {
-         var model$ = _U.replace([["requestsToResume"
-                                  ,_L.fromArray([])]],
-         model);
-         return A2($Lib.bindAll,
-         $Lib.pure(model$),
-         A2($List.map,
-         retryRequest(0),
-         model.requestsToResume));
-      }();
-   };
-   var setWorld = F2(function (mWorld,
-   model) {
-      return function () {
-         var model$ = _U.replace([["world"
-                                  ,mWorld]],
-         model);
-         return A2($Lib.any,
-         A2($Basics.flip,onWorld,mWorld),
-         model$.jediSlots) ? abortAndSaveAllRequests(model$) : resumeAllRequests(model$);
-      }();
-   });
-   var maybeFetchJedi = F4(function (pos,
-   nextPos,
-   getNextUrl,
-   model) {
-      return function () {
-         var mNext = A2(needJediAt,
-         nextPos,
-         model) ? A2($Lib.andThenAndThen,
-         A2($Array.get,
-         pos,
-         model.jediSlots),
-         getNextUrl) : $Maybe.Nothing;
-         return function () {
-            switch (mNext.ctor)
-            {case "Just":
-               return A4(fetchJedi,
-                 0,
-                 nextPos,
-                 mNext._0,
-                 model);
-               case "Nothing":
-               return $Lib.pure(model);}
-            _U.badCase($moduleName,
-            "between lines 343 and 347");
-         }();
-      }();
-   });
-   var maybeFetchJedisAround = F2(function (pos,
-   model) {
-      return A2($Lib._op[">>="],
-      A2($Lib._op[">>="],
-      $Lib.pure(model),
-      A3(maybeFetchJedi,
-      pos,
-      pos - 1,
-      function (_) {
-         return _.master;
-      })),
-      A3(maybeFetchJedi,
-      pos,
-      pos + 1,
-      function (_) {
-         return _.apprentice;
-      }));
-   });
-   var setJedi = F3(function (request,
-   newJediResult,
-   model) {
-      return function () {
-         var maybeRetry = function () {
-            switch (newJediResult.ctor)
-            {case "Err":
-               return A2(retryRequest,
-                 1000,
-                 request);
-               case "Ok": return $Lib.pure;}
-            _U.badCase($moduleName,
-            "between lines 187 and 193");
-         }();
-         var adjustedPos = A3(adjustPos,
-         request.insertPos,
-         request.scrollPos,
-         model.scrollPos);
-         var newMJedi = $Result.toMaybe(newJediResult);
-         var newJediSlots = A2($Lib.inBounds,
-         adjustedPos,
-         model.jediSlots) ? A3($Array.set,
-         adjustedPos,
-         newMJedi,
-         model.jediSlots) : model.jediSlots;
-         var model$ = _U.replace([["jediRequests"
-                                  ,A2(removeRequest,
-                                  request,
-                                  model.jediRequests)]
-                                 ,["jediSlots",newJediSlots]],
-         model);
-         var maybeAbortAll = A2(onWorld,
-         newMJedi,
-         model.world) ? abortAndSaveAllRequests : $Lib.pure;
-         return A2($Lib._op[">>="],
-         A2($Lib._op[">>="],
-         A2(maybeFetchJedisAround,
-         adjustedPos,
-         model$),
-         maybeRetry),
-         maybeAbortAll);
-      }();
-   });
-   var doScroll = F3(function (model,
-   dir,
-   scrollSpeed) {
-      return $Basics.not(A3(canScroll,
-      dir,
-      scrollSpeed,
-      model.jediSlots)) ? $Lib.pure(model) : function () {
-         var emptySlots = A2($Array.repeat,
-         scrollSpeed,
-         $Maybe.Nothing);
-         var slotsLength = $Array.length(model.jediSlots);
-         var $ = function () {
-            switch (dir.ctor)
-            {case "Down":
-               return {ctor: "_Tuple3"
-                      ,_0: A2($Array.append,
-                      A3($Array.slice,
-                      scrollSpeed,
-                      slotsLength,
-                      model.jediSlots),
-                      emptySlots)
-                      ,_1: model.scrollPos + scrollSpeed
-                      ,_2: slotsLength - scrollSpeed - 1};
-               case "Up":
-               return {ctor: "_Tuple3"
-                      ,_0: A2($Array.append,
-                      emptySlots,
-                      A3($Array.slice,
-                      0,
-                      slotsLength - scrollSpeed,
-                      model.jediSlots))
-                      ,_1: model.scrollPos - scrollSpeed
-                      ,_2: scrollSpeed};}
-            _U.badCase($moduleName,
-            "between lines 262 and 274");
-         }(),
-         newJedis = $._0,
-         newScrollPos = $._1,
-         endJediPos = $._2;
-         return A2($Lib._op[">>="],
-         A2($Lib._op[">>="],
-         $Lib.pure(_U.replace([["jediSlots"
-                               ,newJedis]
-                              ,["scrollPos",newScrollPos]],
-         model)),
-         abortRequests),
-         maybeFetchJedisAround(endJediPos));
-      }();
-   });
-   var update = F2(function (action,
-   model) {
-      return function () {
-         switch (action.ctor)
-         {case "NoAction":
-            return $Lib.pure(model);
-            case "Scroll":
-            return A3(doScroll,
-              model,
-              action._0,
-              action._1);
-            case "SetJedi":
-            return A3(setJedi,
-              action._0,
-              action._1,
-              model);
-            case "SetWorld":
-            return A2(setWorld,
-              action._0,
-              model);}
-         _U.badCase($moduleName,
-         "between lines 132 and 143");
-      }();
-   });
-   var Model = F7(function (a,
-   b,
-   c,
-   d,
-   e,
-   f,
-   g) {
-      return {_: {}
-             ,jediRequests: e
-             ,jediSlots: b
-             ,nextRequestId: g
-             ,requestsToResume: f
-             ,scrollPos: c
-             ,scrollSpeed: d
-             ,world: a};
-   });
-   _elm.JediList.values = {_op: _op
-                          ,init: init
-                          ,mkJediUrl: mkJediUrl
-                          ,update: update
-                          ,view: view
-                          ,Model: Model
-                          ,SetWorld: SetWorld};
-   return _elm.JediList.values;
+   _elm.Jedi.values = {_op: _op
+                      ,mkJediUrl: mkJediUrl
+                      ,anyOnWorld: anyOnWorld
+                      ,getNextUrl: getNextUrl
+                      ,getPrevUrl: getPrevUrl
+                      ,decodeJedi: decodeJedi
+                      ,view: view
+                      ,Jedi: Jedi};
+   return _elm.Jedi.values;
 };
 Elm.Json = Elm.Json || {};
 Elm.Json.Decode = Elm.Json.Decode || {};
@@ -4999,6 +4510,581 @@ Elm.Lib.make = function (_elm) {
                      ,aFirst: aFirst
                      ,aLast: aLast};
    return _elm.Lib.values;
+};
+Elm.LinkedList = Elm.LinkedList || {};
+Elm.LinkedList.make = function (_elm) {
+   "use strict";
+   _elm.LinkedList = _elm.LinkedList || {};
+   if (_elm.LinkedList.values)
+   return _elm.LinkedList.values;
+   var _op = {},
+   _N = Elm.Native,
+   _U = _N.Utils.make(_elm),
+   _L = _N.List.make(_elm),
+   $moduleName = "LinkedList",
+   $Array = Elm.Array.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Effects = Elm.Effects.make(_elm),
+   $Html = Elm.Html.make(_elm),
+   $Html$Attributes = Elm.Html.Attributes.make(_elm),
+   $Html$Events = Elm.Html.Events.make(_elm),
+   $Http = Elm.Http.make(_elm),
+   $Json$Decode = Elm.Json.Decode.make(_elm),
+   $Lib = Elm.Lib.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $Task = Elm.Task.make(_elm);
+   var viewItem = F2(function (model,
+   mItem) {
+      return A2($Html.li,
+      _L.fromArray([$Html$Attributes.$class("css-slot")]),
+      function () {
+         switch (mItem.ctor)
+         {case "Just":
+            return _L.fromArray([A2(model.viewItem,
+              model.context,
+              mItem._0)]);
+            case "Nothing":
+            return _L.fromArray([]);}
+         _U.badCase($moduleName,
+         "between lines 434 and 438");
+      }());
+   });
+   var canScroll = F3(function (upOrDown,
+   scrollSpeed,
+   model) {
+      return function () {
+         var $ = function () {
+            switch (upOrDown.ctor)
+            {case "Down":
+               return {ctor: "_Tuple4"
+                      ,_0: $Lib.aLast
+                      ,_1: model.getNextUrl
+                      ,_2: scrollSpeed
+                      ,_3: $Array.length(model.slots)};
+               case "Up":
+               return {ctor: "_Tuple4"
+                      ,_0: $Lib.aFirst
+                      ,_1: model.getPrevUrl
+                      ,_2: 0
+                      ,_3: 0 - scrollSpeed};}
+            _U.badCase($moduleName,
+            "between lines 391 and 403");
+         }(),
+         getFirstOrLast = $._0,
+         nextOrPrev = $._1,
+         scrollStart = $._2,
+         scrollEnd = $._3;
+         var itemInView = $Lib.any($Lib.notNothing)(A2($Array.slice,
+         scrollStart,
+         scrollEnd)(model.slots));
+         var loadedItems = A2($Array.filter,
+         $Lib.notNothing,
+         model.slots);
+         var next = A2($Lib.andThenAndThen,
+         getFirstOrLast(loadedItems),
+         nextOrPrev);
+         return $Lib.notNothing(next) && itemInView;
+      }();
+   });
+   var haveItemAt = F2(function (pos,
+   _v3) {
+      return function () {
+         return !_U.eq(A2($Array.get,
+         pos,
+         _v3.slots),
+         $Maybe.Just($Maybe.Nothing));
+      }();
+   });
+   var needItemAt = F2(function (pos,
+   model) {
+      return A2($Lib.inBounds,
+      pos,
+      model.slots) && $Basics.not(A2(haveItemAt,
+      pos,
+      model));
+   });
+   var removeRequest = F2(function (request,
+   requests) {
+      return A2($List.filter,
+      function (r) {
+         return !_U.eq(r,request);
+      },
+      requests);
+   });
+   var adjustPos = F3(function (pos,
+   oldScrollPos,
+   newScrollPos) {
+      return function () {
+         var offset = oldScrollPos - newScrollPos;
+         return pos + offset;
+      }();
+   });
+   var suspendCondition = function (model) {
+      return A2(model.suspendCondition,
+      model.context,
+      model.slots);
+   };
+   var abortAndSaveAllRequests = function (model) {
+      return {ctor: "_Tuple2"
+             ,_0: _U.replace([["pendingRequests"
+                              ,_L.fromArray([])]
+                             ,["suspendedRequests"
+                              ,A2($List.append,
+                              model.suspendedRequests,
+                              model.pendingRequests)]],
+             model)
+             ,_1: $Effects.batch(A2($List.map,
+             function (_) {
+                return _.abort;
+             },
+             model.pendingRequests))};
+   };
+   var abortRequests = function (model) {
+      return function () {
+         var $ = A2($List.partition,
+         function (request) {
+            return A2($Lib.inBounds,
+            A3(adjustPos,
+            request.insertPos,
+            request.scrollPos,
+            model.scrollPos),
+            model.slots);
+         },
+         model.pendingRequests),
+         newRequests = $._0,
+         requestsToAbort = $._1;
+         var aborts = A2($List.map,
+         function (_) {
+            return _.abort;
+         },
+         requestsToAbort);
+         return {ctor: "_Tuple2"
+                ,_0: _U.replace([["pendingRequests"
+                                 ,newRequests]],
+                model)
+                ,_1: $Effects.batch(aborts)};
+      }();
+   };
+   var NoAction = {ctor: "NoAction"};
+   var Scroll = F2(function (a,b) {
+      return {ctor: "Scroll"
+             ,_0: a
+             ,_1: b};
+   });
+   var viewScrollButton = F5(function (address,
+   scrollDisabled,
+   model,
+   scrollSpeed,
+   dir) {
+      return function () {
+         var clickHandler = A2($Html$Events.onClick,
+         address,
+         A2(Scroll,dir,scrollSpeed));
+         var enabled = $Basics.not(scrollDisabled) && A3(canScroll,
+         dir,
+         scrollSpeed,
+         model);
+         var className = function () {
+            switch (dir.ctor)
+            {case "Down":
+               return "css-button-down";
+               case "Up":
+               return "css-button-up";}
+            _U.badCase($moduleName,
+            "between lines 454 and 460");
+         }();
+         var classes = $Html$Attributes.classList(_L.fromArray([{ctor: "_Tuple2"
+                                                                ,_0: className
+                                                                ,_1: true}
+                                                               ,{ctor: "_Tuple2"
+                                                                ,_0: "css-button-disabled"
+                                                                ,_1: $Basics.not(enabled)}]));
+         return A2($Html.button,
+         enabled ? _L.fromArray([classes
+                                ,clickHandler]) : _L.fromArray([classes]),
+         _L.fromArray([]));
+      }();
+   });
+   var SetItem = F2(function (a,
+   b) {
+      return {ctor: "SetItem"
+             ,_0: a
+             ,_1: b};
+   });
+   var fetchItem = F4(function (sleepMillis,
+   insertPos,
+   url,
+   model) {
+      return function () {
+         var $ = A2($Http.getWithAbort,
+         model.decodeItem,
+         url),
+         sendTask = $._0,
+         abortTask = $._1;
+         var abortEffect = $Effects.task($Task.map(function (_v6) {
+            return function () {
+               return NoAction;
+            }();
+         })($Task.toMaybe(abortTask)));
+         var request = {_: {}
+                       ,abort: abortEffect
+                       ,id: model.nextRequestId
+                       ,insertPos: insertPos
+                       ,scrollPos: model.scrollPos
+                       ,url: url};
+         var sendEffect = $Effects.task($Task.map(SetItem(request))($Task.toResult(A2($Task.andThen,
+         $Task.sleep(sleepMillis),
+         function (_v8) {
+            return function () {
+               return sendTask;
+            }();
+         }))));
+         return {ctor: "_Tuple2"
+                ,_0: _U.replace([["pendingRequests"
+                                 ,A2($List._op["::"],
+                                 request,
+                                 model.pendingRequests)]
+                                ,["nextRequestId"
+                                 ,model.nextRequestId + 1]],
+                model)
+                ,_1: sendEffect};
+      }();
+   });
+   var retryRequest = F3(function (sleepMillis,
+   request,
+   model) {
+      return function () {
+         var model$ = _U.replace([["pendingRequests"
+                                  ,A2(removeRequest,
+                                  request,
+                                  model.pendingRequests)]],
+         model);
+         var newInsertPos = A3(adjustPos,
+         request.insertPos,
+         request.scrollPos,
+         model$.scrollPos);
+         return A4(fetchItem,
+         sleepMillis,
+         newInsertPos,
+         request.url,
+         model$);
+      }();
+   });
+   var resumeAllRequests = function (model) {
+      return function () {
+         var model$ = _U.replace([["suspendedRequests"
+                                  ,_L.fromArray([])]],
+         model);
+         return A2($Lib.bindAll,
+         $Lib.pure(model$),
+         A2($List.map,
+         retryRequest(0),
+         model.suspendedRequests));
+      }();
+   };
+   var setContext = F2(function (context,
+   model) {
+      return function () {
+         var model$ = _U.replace([["context"
+                                  ,context]],
+         model);
+         return suspendCondition(model$) ? abortAndSaveAllRequests(model$) : resumeAllRequests(model$);
+      }();
+   });
+   var maybeFetchItemAt = F4(function (pos,
+   nextPos,
+   getNextUrl,
+   model) {
+      return function () {
+         var mNextUrl = A2(needItemAt,
+         nextPos,
+         model) ? A2($Lib.andThenAndThen,
+         A2($Array.get,pos,model.slots),
+         getNextUrl) : $Maybe.Nothing;
+         return function () {
+            switch (mNextUrl.ctor)
+            {case "Just":
+               return A4(fetchItem,
+                 0,
+                 nextPos,
+                 mNextUrl._0,
+                 model);
+               case "Nothing":
+               return $Lib.pure(model);}
+            _U.badCase($moduleName,
+            "between lines 346 and 350");
+         }();
+      }();
+   });
+   var maybeFetchItemsAround = F2(function (pos,
+   model) {
+      return A2($Lib._op[">>="],
+      A2($Lib._op[">>="],
+      $Lib.pure(model),
+      A3(maybeFetchItemAt,
+      pos,
+      pos - 1,
+      model.getPrevUrl)),
+      A3(maybeFetchItemAt,
+      pos,
+      pos + 1,
+      model.getNextUrl));
+   });
+   var setItem = F3(function (request,
+   newItemResult,
+   model) {
+      return function () {
+         var maybeRetry = function () {
+            switch (newItemResult.ctor)
+            {case "Err":
+               return A2(retryRequest,
+                 1000,
+                 request);
+               case "Ok": return $Lib.pure;}
+            _U.badCase($moduleName,
+            "between lines 191 and 197");
+         }();
+         var adjustedPos = A3(adjustPos,
+         request.insertPos,
+         request.scrollPos,
+         model.scrollPos);
+         var newMItem = $Result.toMaybe(newItemResult);
+         var newSlots = A2($Lib.inBounds,
+         adjustedPos,
+         model.slots) ? A3($Array.set,
+         adjustedPos,
+         newMItem,
+         model.slots) : model.slots;
+         var model$ = _U.replace([["pendingRequests"
+                                  ,A2(removeRequest,
+                                  request,
+                                  model.pendingRequests)]
+                                 ,["slots",newSlots]],
+         model);
+         var maybeAbortAll = suspendCondition(model$) ? abortAndSaveAllRequests : $Lib.pure;
+         return A2($Lib._op[">>="],
+         A2($Lib._op[">>="],
+         A2(maybeFetchItemsAround,
+         adjustedPos,
+         model$),
+         maybeRetry),
+         maybeAbortAll);
+      }();
+   });
+   var doScroll = F3(function (model,
+   dir,
+   scrollSpeed) {
+      return $Basics.not(A3(canScroll,
+      dir,
+      scrollSpeed,
+      model)) ? $Lib.pure(model) : function () {
+         var emptySlots = A2($Array.repeat,
+         scrollSpeed,
+         $Maybe.Nothing);
+         var slotsLength = $Array.length(model.slots);
+         var $ = function () {
+            switch (dir.ctor)
+            {case "Down":
+               return {ctor: "_Tuple3"
+                      ,_0: A2($Array.append,
+                      A3($Array.slice,
+                      scrollSpeed,
+                      slotsLength,
+                      model.slots),
+                      emptySlots)
+                      ,_1: model.scrollPos + scrollSpeed
+                      ,_2: slotsLength - scrollSpeed - 1};
+               case "Up":
+               return {ctor: "_Tuple3"
+                      ,_0: A2($Array.append,
+                      emptySlots,
+                      A3($Array.slice,
+                      0,
+                      slotsLength - scrollSpeed,
+                      model.slots))
+                      ,_1: model.scrollPos - scrollSpeed
+                      ,_2: scrollSpeed};}
+            _U.badCase($moduleName,
+            "between lines 265 and 277");
+         }(),
+         newSlots = $._0,
+         newScrollPos = $._1,
+         endItemPos = $._2;
+         return A2($Lib._op[">>="],
+         A2($Lib._op[">>="],
+         $Lib.pure(_U.replace([["slots"
+                               ,newSlots]
+                              ,["scrollPos",newScrollPos]],
+         model)),
+         abortRequests),
+         maybeFetchItemsAround(endItemPos));
+      }();
+   });
+   var update = F2(function (action,
+   model) {
+      return function () {
+         switch (action.ctor)
+         {case "NoAction":
+            return $Lib.pure(model);
+            case "Scroll":
+            return A3(doScroll,
+              model,
+              action._0,
+              action._1);
+            case "SetContext":
+            return A2(setContext,
+              action._0,
+              model);
+            case "SetItem":
+            return A3(setItem,
+              action._0,
+              action._1,
+              model);}
+         _U.badCase($moduleName,
+         "between lines 133 and 144");
+      }();
+   });
+   var SetContext = function (a) {
+      return {ctor: "SetContext"
+             ,_0: a};
+   };
+   var initModel = function (config) {
+      return {_: {}
+             ,context: config.initContext
+             ,decodeItem: config.decodeItem
+             ,getNextUrl: config.getNextUrl
+             ,getPrevUrl: config.getPrevUrl
+             ,nextRequestId: 0
+             ,pendingRequests: _L.fromArray([])
+             ,scrollPos: 0
+             ,scrollSpeed: config.scrollSpeed
+             ,slots: A2($Array.repeat,
+             config.nbSlots,
+             $Maybe.Nothing)
+             ,suspendCondition: config.suspendCondition
+             ,suspendedRequests: _L.fromArray([])
+             ,viewItem: config.viewItem};
+   };
+   var init = function (config) {
+      return function () {
+         var model = initModel(config);
+         return A4(fetchItem,
+         0,
+         config.nbSlots / 2 | 0,
+         config.initUrl,
+         model);
+      }();
+   };
+   var Down = {ctor: "Down"};
+   var Up = {ctor: "Up"};
+   var viewScrollButtons = F2(function (address,
+   model) {
+      return function () {
+         var scrollDisabled = suspendCondition(model);
+         return A2($Html.div,
+         _L.fromArray([$Html$Attributes.$class("css-scroll-buttons")]),
+         A2($List.map,
+         A4(viewScrollButton,
+         address,
+         scrollDisabled,
+         model,
+         model.scrollSpeed),
+         _L.fromArray([Up,Down])));
+      }();
+   });
+   var view = F2(function (address,
+   model) {
+      return A2($Html.div,
+      _L.fromArray([$Html$Attributes.$class("css-scrollable-list")]),
+      _L.fromArray([A2($Html.ul,
+                   _L.fromArray([$Html$Attributes.$class("css-slots")]),
+                   A2($List.map,
+                   viewItem(model),
+                   $Array.toList(model.slots)))
+                   ,A2(viewScrollButtons,
+                   address,
+                   model)]));
+   });
+   var Request = F5(function (a,
+   b,
+   c,
+   d,
+   e) {
+      return {_: {}
+             ,abort: e
+             ,id: a
+             ,insertPos: c
+             ,scrollPos: d
+             ,url: b};
+   });
+   var Config = F9(function (a,
+   b,
+   c,
+   d,
+   e,
+   f,
+   g,
+   h,
+   i) {
+      return {_: {}
+             ,decodeItem: f
+             ,getNextUrl: d
+             ,getPrevUrl: e
+             ,initContext: a
+             ,initUrl: b
+             ,nbSlots: h
+             ,scrollSpeed: i
+             ,suspendCondition: c
+             ,viewItem: g};
+   });
+   var Model = function (a) {
+      return function (b) {
+         return function (c) {
+            return function (d) {
+               return function (e) {
+                  return function (f) {
+                     return function (g) {
+                        return function (h) {
+                           return function (i) {
+                              return function (j) {
+                                 return function (k) {
+                                    return function (l) {
+                                       return {_: {}
+                                              ,context: a
+                                              ,decodeItem: e
+                                              ,getNextUrl: c
+                                              ,getPrevUrl: d
+                                              ,nextRequestId: l
+                                              ,pendingRequests: j
+                                              ,scrollPos: h
+                                              ,scrollSpeed: i
+                                              ,slots: g
+                                              ,suspendCondition: b
+                                              ,suspendedRequests: k
+                                              ,viewItem: f};
+                                    };
+                                 };
+                              };
+                           };
+                        };
+                     };
+                  };
+               };
+            };
+         };
+      };
+   };
+   _elm.LinkedList.values = {_op: _op
+                            ,init: init
+                            ,update: update
+                            ,view: view
+                            ,Model: Model
+                            ,Config: Config
+                            ,SetContext: SetContext};
+   return _elm.LinkedList.values;
 };
 Elm.List = Elm.List || {};
 Elm.List.make = function (_elm) {
@@ -5370,7 +5456,9 @@ Elm.Main.make = function (_elm) {
    $Effects = Elm.Effects.make(_elm),
    $Html = Elm.Html.make(_elm),
    $Html$Attributes = Elm.Html.Attributes.make(_elm),
-   $JediList = Elm.JediList.make(_elm),
+   $Jedi = Elm.Jedi.make(_elm),
+   $Lib = Elm.Lib.make(_elm),
+   $LinkedList = Elm.LinkedList.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
    $PlanetMonitor = Elm.PlanetMonitor.make(_elm),
@@ -5393,7 +5481,7 @@ Elm.Main.make = function (_elm) {
          switch (action.ctor)
          {case "JediListAction":
             return function () {
-                 var $ = A2($JediList.update,
+                 var $ = A2($LinkedList.update,
                  action._0,
                  model.jediList),
                  jediList = $._0,
@@ -5420,9 +5508,15 @@ Elm.Main.make = function (_elm) {
                         ,_1: A2($Effects.map,
                         PlanetMonitorAction,
                         effects)};
-              }();}
+              }();
+            case "SetWorld":
+            return A2($Lib._op[">>="],
+              A2($Lib._op[">>="],
+              $Lib.pure(model),
+              update(PlanetMonitorAction($PlanetMonitor.SetWorld(action._0)))),
+              update(JediListAction($LinkedList.SetContext(action._0))));}
          _U.badCase($moduleName,
-         "between lines 77 and 90");
+         "between lines 86 and 104");
       }();
    });
    var view = F2(function (address,
@@ -5434,25 +5528,33 @@ Elm.Main.make = function (_elm) {
                    address,
                    PlanetMonitorAction),
                    model.planetMonitor)
-                   ,A2($JediList.view,
+                   ,A2($LinkedList.view,
                    A2($Signal.forwardTo,
                    address,
                    JediListAction),
                    model.jediList)]));
    });
+   var SetWorld = function (a) {
+      return {ctor: "SetWorld"
+             ,_0: a};
+   };
+   var listConfig = {_: {}
+                    ,decodeItem: $Jedi.decodeJedi
+                    ,getNextUrl: $Jedi.getNextUrl
+                    ,getPrevUrl: $Jedi.getPrevUrl
+                    ,initContext: $Maybe.Nothing
+                    ,initUrl: $Jedi.mkJediUrl(3616).url
+                    ,nbSlots: 5
+                    ,scrollSpeed: 2
+                    ,suspendCondition: $Jedi.anyOnWorld
+                    ,viewItem: $Jedi.view};
    var init = function () {
+      var $ = $LinkedList.init(listConfig),
+      jediList = $._0,
+      jlEffects = $._1;
       var $ = $PlanetMonitor.init,
       planetMonitor = $._0,
       pmEffects = $._1;
-      var initialJediId = 3616;
-      var scrollSpeed = 2;
-      var nbSlots = 5;
-      var $ = A3($JediList.init,
-      nbSlots,
-      scrollSpeed,
-      initialJediId),
-      jediList = $._0,
-      jlEffects = $._1;
       return {ctor: "_Tuple2"
              ,_0: {_: {}
                   ,jediList: jediList
@@ -5482,15 +5584,8 @@ Elm.Main.make = function (_elm) {
    var app = $StartApp.start({_: {}
                              ,init: init
                              ,inputs: _L.fromArray([A2($Signal.map,
-                                                   function ($) {
-                                                      return PlanetMonitorAction($PlanetMonitor.SetWorld($));
-                                                   },
-                                                   currentWorld)
-                                                   ,A2($Signal.map,
-                                                   function ($) {
-                                                      return JediListAction($JediList.SetWorld($));
-                                                   },
-                                                   currentWorld)])
+                             SetWorld,
+                             currentWorld)])
                              ,update: update
                              ,view: view});
    var main = app.html;
@@ -5500,7 +5595,9 @@ Elm.Main.make = function (_elm) {
                       ,app: app
                       ,main: main
                       ,Model: Model
+                      ,listConfig: listConfig
                       ,init: init
+                      ,SetWorld: SetWorld
                       ,PlanetMonitorAction: PlanetMonitorAction
                       ,JediListAction: JediListAction
                       ,update: update

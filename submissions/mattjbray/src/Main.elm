@@ -6,9 +6,11 @@ import Html.Attributes exposing (class)
 import StartApp
 import Task exposing (Task)
 
+import Lib exposing ((>>=), pure)
 import World exposing (World)
 import PlanetMonitor
-import JediList
+import LinkedList
+import Jedi
 
 
 app : StartApp.App Model
@@ -17,9 +19,7 @@ app =
     { init = init
     , update = update
     , view = view
-    , inputs =
-        [ Signal.map (PlanetMonitorAction << PlanetMonitor.SetWorld) currentWorld
-        , Signal.map (JediListAction << JediList.SetWorld) currentWorld ]
+    , inputs = [ Signal.map SetWorld currentWorld ]
     }
 
 
@@ -41,21 +41,30 @@ port currentWorld : Signal (Maybe World)
 
 type alias Model =
   { planetMonitor:PlanetMonitor.Model
-  , jediList:JediList.Model
+  , jediList:LinkedList.Model Jedi.Jedi (Maybe World)
   }
 
 
+listConfig : LinkedList.Config Jedi.Jedi (Maybe World)
+listConfig =
+  { initContext = Nothing
+  , initUrl = (Jedi.mkJediUrl 3616).url
+  , suspendCondition = Jedi.anyOnWorld
+  , getNextUrl = Jedi.getNextUrl
+  , getPrevUrl = Jedi.getPrevUrl
+  , decodeItem = Jedi.decodeJedi
+  , viewItem = Jedi.view
+  , nbSlots = 5
+  , scrollSpeed = 2
+  }
+
 init : (Model, Effects Action)
 init =
-  let nbSlots = 5
-      scrollSpeed = 2
-      initialJediId = 3616
-
-      (planetMonitor, pmEffects) =
+  let (planetMonitor, pmEffects) =
         PlanetMonitor.init
 
       (jediList, jlEffects) =
-        JediList.init nbSlots scrollSpeed initialJediId
+        LinkedList.init listConfig
   in
     ( { planetMonitor = planetMonitor
       , jediList = jediList }
@@ -65,8 +74,9 @@ init =
 
 
 type Action
-  = PlanetMonitorAction PlanetMonitor.Action
-  | JediListAction JediList.Action
+  = SetWorld (Maybe World)
+  | PlanetMonitorAction PlanetMonitor.Action
+  | JediListAction (LinkedList.Action Jedi.Jedi (Maybe World))
 
 
 {-| Dispatch actions to components
@@ -74,6 +84,11 @@ type Action
 update : Action -> Model -> (Model, Effects Action)
 update action model =
   case action of
+    SetWorld mWorld ->
+      pure model
+        >>= update (PlanetMonitorAction (PlanetMonitor.SetWorld mWorld))
+        >>= update (JediListAction (LinkedList.SetContext mWorld))
+
     PlanetMonitorAction act ->
       let (planetMonitor, effects) =
             PlanetMonitor.update act model.planetMonitor
@@ -83,7 +98,7 @@ update action model =
 
     JediListAction act ->
       let (jediList, effects) =
-            JediList.update act model.jediList
+            LinkedList.update act model.jediList
       in
           ( { model | jediList <- jediList }
           , Effects.map JediListAction effects )
@@ -96,6 +111,6 @@ view address model =
     [ PlanetMonitor.view
         (Signal.forwardTo address PlanetMonitorAction)
         model.planetMonitor
-    , JediList.view
+    , LinkedList.view
         (Signal.forwardTo address JediListAction)
         model.jediList ]
