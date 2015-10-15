@@ -14,17 +14,18 @@ import Json.Decode as Json
 import Http
 import Task
 
-import Lib exposing ( (>>=)
-                    , aFirst
-                    , aLast
-                    , andThenAndThen
-                    , any
-                    , bindAll
-                    , inBounds
-                    , isNothing
-                    , mMap2
-                    , notNothing
-                    , pure )
+import Lib exposing
+  ( (>>=)
+  , aFirst
+  , aLast
+  , andThenAndThen
+  , any
+  , bindAll
+  , inBounds
+  , isNothing
+  , mMap2
+  , notNothing
+  , pure )
 
 
 --

@@ -5,7 +5,6 @@ import Effects exposing (Effects)
 import Maybe exposing (andThen)
 
 
-
 inBounds : Int -> Array x -> Bool
 inBounds pos slots =
   pos >= 0 && pos < Array.length slots

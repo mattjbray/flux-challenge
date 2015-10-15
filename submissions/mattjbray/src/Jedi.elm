@@ -11,9 +11,9 @@ import Html exposing (Html, div, h3, h6, text)
 import Html.Attributes exposing (style)
 import Json.Decode as Json exposing ((:=))
 
-import Lib exposing ( any
-                    , mMap2 )
+import Lib exposing (any, mMap2)
 import World exposing (World, decodeWorld)
+
 
 type alias Jedi =
   { id:Int

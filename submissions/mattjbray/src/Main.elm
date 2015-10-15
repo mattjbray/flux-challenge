@@ -45,6 +45,7 @@ type alias Model =
   }
 
 
+{-| Wire up our LinkedList with Jedis -}
 listConfig : LinkedList.Config Jedi.Jedi (Maybe World)
 listConfig =
   { initContext = Nothing
