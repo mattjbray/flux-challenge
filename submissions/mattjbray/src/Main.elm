@@ -1,15 +1,16 @@
-module Main where
+module Main exposing (..)
 
 import Array exposing (Array)
-import Effects exposing (Effects)
+import Html.App as Html
 import Html exposing (Html, button, div, h1, h3, h6, li, text, ul)
 import Html.Attributes exposing (class, classList, style)
 import Html.Events exposing (onClick)
 import Http
-import Json.Decode as Json exposing ((:=))
+import Json.Decode as Json exposing ((:=), decodeString)
 import Maybe exposing (andThen)
-import StartApp
+import Process
 import Task
+import WebSocket
 
 
 --
@@ -17,29 +18,21 @@ import Task
 --
 
 
-app =
-  StartApp.start
+main : Program Never
+main =
+  Html.program
     { init = init 5             -- nbSlots
                   2             -- scrollSpeed
                   darthSidious  -- first jedi to fetch
     , update = update
     , view = view
-    , inputs = [Signal.map SetWorld currentWorld]
+    , subscriptions = subscriptions
     }
 
 
-main =
-  app.html
-
-
-port tasks : Signal (Task.Task Effects.Never ())
-port tasks =
-  app.tasks
-
-
--- index.html creates a websocket and calls this port whenever a message is
--- received.
-port currentWorld : Signal (Maybe World)
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+  WebSocket.listen "ws://localhost:4000" SetWorld
 
 
 --
@@ -95,7 +88,7 @@ type alias JediRequest =
   , jediUrl:JediUrl
   , insertPos:Int
   , scrollPos:Int
-  , abort:Effects Action}
+  , abort:Cmd Msg}
 
 
 type ScrollDir
@@ -113,7 +106,7 @@ darthSidious : JediUrl
 darthSidious = mkJediUrl 3616
 
 
-init : Int -> Int -> JediUrl -> (Model, Effects Action)
+init : Int -> Int -> JediUrl -> (Model, Cmd Msg)
 init nbSlots scrollSpeed jediUrl =
   fetchJedi 0 (nbSlots // 2) jediUrl (initModel nbSlots scrollSpeed)
 
@@ -131,12 +124,12 @@ initModel nbSlots scrollSpeed =
 
 
 --
--- Actions
+-- Messages
 --
 
 
-type Action
-  = SetWorld (Maybe World)
+type Msg
+  = SetWorld String
   | SetJedi JediRequest
             (Result Http.Error Jedi)
   | Scroll ScrollDir Int
@@ -148,14 +141,18 @@ type Action
 --
 
 
-update : Action -> Model -> (Model, Effects Action)
+update : Msg -> Model -> (Model, Cmd Msg)
 update action model =
   case action of
     SetJedi request newJediResult ->
       setJedi request newJediResult model
 
-    SetWorld mWorld ->
-      setWorld mWorld model
+    SetWorld response ->
+      case decodeString decodeWorld response of
+        Err _ ->
+          pure model
+        Ok world ->
+          setWorld world model
 
     Scroll dir scrollSpeed ->
       doScroll model dir scrollSpeed
@@ -172,11 +169,11 @@ update action model =
 If any of the dark jedis in view are on the same world, abort all outstanding
 jedi requests.
 -}
-setWorld : Maybe World -> Model -> (Model, Effects Action)
-setWorld mWorld model =
-  let model' = { model | world = mWorld }
+setWorld : World -> Model -> (Model, Cmd Msg)
+setWorld world model =
+  let model' = { model | world = Just world }
   in
-      if any (flip onWorld mWorld) model'.jediSlots
+      if any (flip onWorld (Just world)) model'.jediSlots
         then abortAndSaveAllRequests model'
         else resumeAllRequests model'
 
@@ -186,7 +183,7 @@ completed request from the list, and fetch the jedis before/after the new jedi
 if required.
 If Obi-Wan is on the new jedi's homeworld, abort and save all outstanding requests.
 -}
-setJedi : JediRequest -> Result Http.Error Jedi -> Model -> (Model, Effects Action)
+setJedi : JediRequest -> Result Http.Error Jedi -> Model -> (Model, Cmd Msg)
 setJedi request newJediResult model =
   let newMJedi = Result.toMaybe newJediResult
 
@@ -225,7 +222,7 @@ setJedi request newJediResult model =
 {-| Extract requests for jedis that are no longer in view and need to be
 aborted.
 -}
-abortRequests : Model -> (Model, Effects Action)
+abortRequests : Model -> (Model, Cmd Msg)
 abortRequests model =
   let (newRequests, requestsToAbort) =
         List.partition
@@ -238,21 +235,21 @@ abortRequests model =
       aborts = List.map .abort requestsToAbort
   in
       ( { model | jediRequests = newRequests }
-      , Effects.batch aborts )
+      , Cmd.batch aborts )
 
 
 {-| Abort all outstanding requests, and save them for resuming later.
 -}
-abortAndSaveAllRequests : Model -> (Model, Effects Action)
+abortAndSaveAllRequests : Model -> (Model, Cmd Msg)
 abortAndSaveAllRequests model =
   ( { model | jediRequests = []
             , requestsToResume = List.append model.requestsToResume model.jediRequests }
-  , Effects.batch (List.map .abort model.jediRequests) )
+  , Cmd.batch (List.map .abort model.jediRequests) )
 
 
 {-| Resume requests that have been aborted
 -}
-resumeAllRequests : Model -> (Model, Effects Action)
+resumeAllRequests : Model -> (Model, Cmd Msg)
 resumeAllRequests model =
   let model' =
         { model | requestsToResume = [] }
@@ -268,9 +265,9 @@ resumeAllRequests model =
 * if the first (last) jedi has a master (an apprentice), fire off a new jedi
   request.
 -}
-doScroll : Model -> ScrollDir -> Int -> (Model, Effects Action)
+doScroll : Model -> ScrollDir -> Int -> (Model, Cmd Msg)
 doScroll model dir scrollSpeed =
-  if not (canScroll dir scrollSpeed model.jediSlots)
+  if not (canScroll dir scrollSpeed model)
     then pure model
     else
       let slotsLength =
@@ -299,16 +296,18 @@ doScroll model dir scrollSpeed =
             >>= maybeFetchJedisAround endJediPos
 
 
-fetchJedi : Float -> Int -> JediUrl -> Model -> (Model, Effects Action)
+fetchJedi : Float -> Int -> JediUrl -> Model -> (Model, Cmd Msg)
 fetchJedi sleepMillis insertPos jediUrl model =
-  let (sendTask, abortTask) =
-        Http.getWithAbort decodeJedi jediUrl.url
+  let sendTask =
+        Http.get decodeJedi jediUrl.url
 
+      -- TODO: re-implement aborting requests
       abortEffect =
-        abortTask
-          |> Task.toMaybe
-          |> Task.map (\_ -> NoAction)
-          |> Effects.task
+        Cmd.none
+        -- abortTask
+        --   |> Task.toMaybe
+        --   |> Task.map (\_ -> NoAction)
+        --   |> Cmd.task
 
       request =
         { id = model.nextRequestId
@@ -318,11 +317,10 @@ fetchJedi sleepMillis insertPos jediUrl model =
         , abort = abortEffect }
 
       sendEffect =
-        Task.sleep sleepMillis
+        Process.sleep sleepMillis
           `Task.andThen` (\_ -> sendTask)
             |> Task.toResult
-            |> Task.map (SetJedi request)
-            |> Effects.task
+            |> Task.perform (\_ -> NoAction) (SetJedi request)
 
   in
       ( { model | jediRequests = request :: model.jediRequests
@@ -332,7 +330,7 @@ fetchJedi sleepMillis insertPos jediUrl model =
 
 {-| Replay a request (after adjusting the insert position)
 -}
-retryRequest : Float -> JediRequest -> Model -> (Model, Effects Action)
+retryRequest : Float -> JediRequest -> Model -> (Model, Cmd Msg)
 retryRequest sleepMillis request model =
   let model' = { model | jediRequests = removeRequest request model.jediRequests }
       newInsertPos =
@@ -346,14 +344,14 @@ retryRequest sleepMillis request model =
 {-| Check whether we have jedis around the jedi at `pos`, and fetch them if we
 don't.
 -}
-maybeFetchJedisAround : Int -> Model -> (Model, Effects Action)
+maybeFetchJedisAround : Int -> Model -> (Model, Cmd Msg)
 maybeFetchJedisAround pos model =
   pure model
     >>= maybeFetchJedi pos (pos - 1) .master
     >>= maybeFetchJedi pos (pos + 1) .apprentice
 
 
-maybeFetchJedi : Int -> Int -> (Jedi -> Maybe JediUrl) -> Model -> (Model, Effects Action)
+maybeFetchJedi : Int -> Int -> (Jedi -> Maybe JediUrl) -> Model -> (Model, Cmd Msg)
 maybeFetchJedi pos nextPos getNextUrl model =
   let
     mNext =
@@ -396,10 +394,10 @@ needJediAt pos model =
 {-| Return True if the first (last) jedi in the list has an apprentice (master)
 AND we would have at least one jedi in view after the scroll.
 -}
-canScroll : ScrollDir -> Int -> Array (Maybe Jedi) -> Bool
-canScroll upOrDown scrollSpeed jediSlots =
+canScroll : ScrollDir -> Int -> Model -> Bool
+canScroll upOrDown scrollSpeed model =
   let loadedJedis =
-        Array.filter notNothing jediSlots
+        Array.filter notNothing model.jediSlots
 
       (getFirstOrLast, apprenticeOrMaster, scrollStart, scrollEnd) =
         case upOrDown of
@@ -412,19 +410,21 @@ canScroll upOrDown scrollSpeed jediSlots =
             ( aLast
             , .apprentice
             , scrollSpeed
-            , Array.length jediSlots)
+            , Array.length model.jediSlots)
 
       next =
         getFirstOrLast loadedJedis
           `andThenAndThen` apprenticeOrMaster
 
       jediInView =
-        jediSlots
+        model.jediSlots
           |> Array.slice scrollStart scrollEnd
           |> any notNothing
 
+      scrollDisabled =
+        any (flip onWorld model.world) model.jediSlots
   in
-      notNothing next && jediInView
+      notNothing next && jediInView && not scrollDisabled
 
 
 onWorld : Maybe Jedi -> Maybe World -> Bool
@@ -440,15 +440,15 @@ onWorld mJedi mWorld =
 --
 
 
-view : Signal.Address Action -> Model -> Html
-view address model =
+view : Model -> Html Msg
+view model =
   div [ class "css-root" ]
     [ viewPlanetMonitor model.world
-    , viewJediList address model
+    , viewJediList model
     ]
 
 
-viewPlanetMonitor : Maybe World -> Html
+viewPlanetMonitor : Maybe World -> Html Msg
 viewPlanetMonitor mWorld =
   h1 [ class "css-planet-monitor" ]
     [ text ("Obi-Wan currently "
@@ -459,17 +459,17 @@ viewPlanetMonitor mWorld =
     ]
 
 
-viewJediList : Signal.Address Action -> Model -> Html
-viewJediList address model =
+viewJediList : Model -> Html Msg
+viewJediList model =
     div [ class "css-scrollable-list" ]
       [ ul [ class "css-slots" ]
           (List.map (viewJedi model.world)
                     (Array.toList model.jediSlots))
-      , viewScrollButtons address model
+      , viewScrollButtons model
       ]
 
 
-viewJedi : Maybe World -> Maybe Jedi -> Html
+viewJedi : Maybe World -> Maybe Jedi -> Html Msg
 viewJedi mWorld mJedi =
   li
     [ class "css-slot"
@@ -486,18 +486,16 @@ viewJedi mWorld mJedi =
     )
 
 
-viewScrollButtons : Signal.Address Action -> Model -> Html
-viewScrollButtons address model =
-  let scrollDisabled = any (flip onWorld model.world) model.jediSlots
-  in
-    div [ class "css-scroll-buttons" ]
-      (List.map
-         (viewScrollButton address scrollDisabled model.jediSlots model.scrollSpeed)
-         [ Up, Down ])
+viewScrollButtons : Model -> Html Msg
+viewScrollButtons model =
+  div [ class "css-scroll-buttons" ]
+    (List.map
+        (viewScrollButton model)
+        [ Up, Down ])
 
 
-viewScrollButton : Signal.Address Action -> Bool -> Array (Maybe Jedi) -> Int -> ScrollDir -> Html
-viewScrollButton address scrollDisabled jediSlots scrollSpeed dir =
+viewScrollButton : Model -> ScrollDir -> Html Msg
+viewScrollButton model dir =
   let className =
         case dir of
           Up ->
@@ -505,18 +503,16 @@ viewScrollButton address scrollDisabled jediSlots scrollSpeed dir =
           Down ->
             "css-button-down"
 
-      enabled = not scrollDisabled && canScroll dir scrollSpeed jediSlots
+      enabled = canScroll dir model.scrollSpeed model
 
       classes = classList [ (className, True)
                           , ("css-button-disabled", not enabled)
                           ]
 
-      clickHandler = onClick address (Scroll dir scrollSpeed)
+      clickHandler = onClick (Scroll dir model.scrollSpeed)
   in
       button
-        (if enabled
-           then [classes, clickHandler]
-           else [classes])
+        [classes, clickHandler]
         []
 
 
@@ -604,26 +600,26 @@ andThenAndThen mmValue f =
   mmValue `andThen` flip andThen f
 
 
-{-| Monadic pure: lift a Model to a (Model, Effects Action).
+{-| Monadic pure: lift a Model to a (Model, Cmd Msg).
 -}
-pure : a -> (a, Effects b)
-pure model = (model, Effects.none)
+pure : a -> (a, Cmd b)
+pure model = (model, Cmd.none)
 
 
 {-| Monadic bind: compose effectful computations.
 -}
-(>>=) : (a, Effects b) -> (a -> (c, Effects b)) -> (c, Effects b)
+(>>=) : (a, Cmd b) -> (a -> (c, Cmd b)) -> (c, Cmd b)
 (>>=) (model, effects) f =
   let (model', effects') = f model
   in
-      (model', Effects.batch [effects, effects'])
+      (model', Cmd.batch [effects, effects'])
 
 
 {-| Does this have a well known name?
 Thread a (model, effects) pair through a list of (model -> (model, effects))
 functions.
 -}
-bindAll : (a, Effects b) -> List (a -> (a, Effects b)) -> (a, Effects b)
+bindAll : (a, Cmd b) -> List (a -> (a, Cmd b)) -> (a, Cmd b)
 bindAll modelEffects fs =
   List.foldl (flip (>>=)) modelEffects fs
 
